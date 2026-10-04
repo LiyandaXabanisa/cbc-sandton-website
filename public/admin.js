@@ -433,8 +433,8 @@
       if (err && err.auth) return toLogin();
       if (err && err.unavailable) {
         return showNotice(
-          "Leaders area isn't switched on",
-          "This site isn't connected to a database yet. Add your ChurchHub (Supabase) details to site.config.js, or run the site locally with npm start."
+          "Leaders area is opening soon",
+          "This area isn't switched on yet. Please check back soon."
         );
       }
       showNotice("Couldn't load members", (err && err.message) || "Please refresh the page and try again.");

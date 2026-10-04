@@ -61,6 +61,9 @@
 
   function handleAuth(err) {
     if (err && err.auth) return toLogin();
+    if (err && err.unavailable) {
+      return showNotice("Member area is opening soon", "Logins aren't switched on yet. Please check back soon.");
+    }
     showNotice("Something went wrong", (err && err.message) || "Please refresh the page and try again.");
   }
 

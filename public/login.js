@@ -40,7 +40,7 @@
   }
 
   function friendly(err, fallback) {
-    if (err && err.unavailable) return "Login isn't switched on for this site yet.";
+    if (err && err.unavailable) return "Member login is opening soon. Please check back shortly.";
     var msg = err && err.message;
     if (!msg || /failed to fetch|networkerror|load failed/i.test(msg)) return "Couldn't reach the server. Please try again.";
     return msg || fallback;
@@ -121,9 +121,9 @@
     })
     .catch(function (err) {
       if (err && err.unavailable) {
-        $("#notice-title").textContent = "Login isn't switched on";
+        $("#notice-title").textContent = "Member login is opening soon";
         $("#notice-body").textContent =
-          "This site isn't connected to a database yet. Add the ChurchHub (Supabase) details to site.config.js, or run the site locally with npm start.";
+          "Logins aren't switched on yet. Please check back soon, or speak to someone at the church on Sunday.";
         show("notice");
       } else {
         show("signin");
