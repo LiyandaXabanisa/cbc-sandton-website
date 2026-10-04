@@ -48,6 +48,22 @@ Codes work once, expire after 14 days and lock after 5 wrong tries. Deactivating
 
 Leaders sign in with their ChurchHub email and password on the hosted site. In local demo mode, a leader leaves the email empty on the Login page and uses `ADMIN_PASSWORD` from `.env`.
 
+## Importing the existing member list
+
+`scripts/import_members.py` turns the church's membership spreadsheet into import files. It needs only Python, with nothing to install.
+
+```bash
+python scripts/import_members.py "C:/path/to/Membership.xlsx"           # report only
+python scripts/import_members.py "C:/path/to/Membership.xlsx" --write   # create the files
+```
+
+* The report lists problems by row number only and never prints anyone's details.
+* The files are written to `Downloads/CBC-import`, outside this project, so personal details cannot reach GitHub. `.gitignore` also blocks spreadsheets and the import files.
+* Open `supabase-import-members.sql`, replace `PASTE-CHURCH-ID-HERE` with your church id, and run it once in the Supabase SQL editor after `website-integration.sql`. Running it again does not add anyone twice.
+* Everyone is added as an active member. Home addresses are left out unless you add `--address`, because ChurchHub has no address field yet.
+* Rows with a problem (an incomplete email, a doubtful phone number, two people on one email) are kept, with a note on the member so a leader can fix them.
+* Use `--local` to add the members to the local demo server instead.
+
 ## The demo database (temporary)
 
 GitHub Pages cannot run a database, so until the real ChurchHub database is connected, `public/demo.js` provides a built in **demo database** with sample members, notices and logins. It lives only in the visitor's own browser, and a banner on every page says so.

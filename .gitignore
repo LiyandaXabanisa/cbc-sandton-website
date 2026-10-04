@@ -5,3 +5,9 @@ data/*.tmp
 .claude/
 *.log
 CBC/
+
+# Real member data must never be committed
+private/
+*.xlsx
+members-clean.csv
+supabase-import-members.sql

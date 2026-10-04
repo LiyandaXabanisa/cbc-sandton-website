@@ -75,6 +75,17 @@ The Protection of Personal Information Act (POPIA) applies as soon as the site c
 * [ ] Keep a short written record of who can see member data and why
 * [ ] Know what to do if data is lost or exposed (who is told, and how quickly)
 
+## 5B. The existing membership list
+
+* [x] The 2026 spreadsheet (89 members) has been checked and import files prepared outside the project
+* [x] Three rows need a leader's attention: one incomplete email, one doubtful phone number, and two people sharing one email
+* [ ] Fix those three records after the import (they carry a note)
+* [ ] Decide whether home addresses are needed at all; if yes, add an address field first and treat it as more sensitive than a phone number
+* [ ] Tell current members how their details are used and where they are kept, because they did not tick the website's consent box
+* [ ] Keep the spreadsheet and the import files private; delete the import files from Downloads once the import is done
+* [ ] Two people sharing one email can only have one member login between them, so one of them needs a different email
+* [ ] Never put member details in GitHub, the website folder or a chat
+
 ## 5A. Member logins and notices
 
 * [x] One Login page for members and leaders, each sent to the right area
