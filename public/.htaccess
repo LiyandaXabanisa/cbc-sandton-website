@@ -42,3 +42,20 @@ AddType application/manifest+json .webmanifest
     Header always set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>
+
+# Send text files compressed (about a quarter of the size on a phone).
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>
+
+# Fonts and the logo never change, so phones keep them for a long time.
+AddType font/woff2 .woff2
+<IfModule mod_expires.c>
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.woff2$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

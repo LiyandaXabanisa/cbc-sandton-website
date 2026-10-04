@@ -139,6 +139,14 @@ Releasing changes needs no extra step, because new files are fetched whenever th
 
 Service workers only run on https:// addresses and on localhost, so the xneelo site gets this once HTTPS is on. Note that the built in preview browser inside some tools blocks service workers; test in Chrome or Edge.
 
+## Speed notes
+
+* **No third party requests.** The fonts live in `public/assets/fonts/` (Fraunces, Archivo and JetBrains Mono, all under the SIL Open Font License, see `LICENSES.txt` there). Phones never contact Google, which is faster and avoids sharing visitors' IP addresses.
+* **Vector logo.** `public/assets/emblem.svg` is 5 KB, stays sharp at any size, and replaced a 43 KB PNG. The PNG icons are only for phone home screens and sharing previews.
+* The three fonts the first screen needs are preloaded, images have fixed sizes so nothing jumps, and images below the first screen load only when needed.
+* `public/.htaccess` compresses text files and lets phones keep fonts for a year (xneelo only).
+* If you change a font file or the logo, also raise `VERSION` in `public/sw.js` so phones fetch the new copy.
+
 ## Hosting on xneelo (cbcsandton.co.za)
 
 The domain and a Standard web hosting package are already in the church's xneelo account, and the domain's DNS already points at xneelo's Apache servers. Standard hosting serves static files, which is all this site needs, because the database lives on Supabase. `server.js` does not run on xneelo.

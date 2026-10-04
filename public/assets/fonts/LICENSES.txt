@@ -1,0 +1,10 @@
+These font files are served from this website instead of from Google, so visitors' phones
+make no request to a third party.
+
+Fraunces            Copyright 2018 The Fraunces Project Authors (https://github.com/undercasetype/Fraunces)
+Archivo             Copyright 2019 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo)
+JetBrains Mono      Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+All three are licensed under the SIL Open Font License, Version 1.1, which permits use,
+copying and embedding on websites. Full text: https://openfontlicense.org
+Files are the Latin subset as published by Google Fonts. Fraunces is fixed at optical size 36 and weight 500.
