@@ -59,11 +59,11 @@ h1,h2,h3{
   margin:0;
 }
 .skip-link{
-  position:absolute;left:-999px;top:0;
+  position:absolute;left:0;top:0;transform:translateY(-150%);
   background:var(--gold-500);color:var(--navy-950);
   padding:10px 16px;font-weight:600;z-index:999;border-radius:0 0 6px 0;
 }
-.skip-link:focus{left:0;}
+.skip-link:focus{transform:none;}
 :focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px;}
 
 /* ---------- NAV ---------- */
@@ -362,7 +362,7 @@ footer{
 }
 
 /* ---------- FORM EXTRAS ---------- */
-.hp-field{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
+.hp-field{position:absolute;left:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none;}
 .field.consent{display:flex;gap:12px;align-items:flex-start;}
 .field.consent input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--gold-500);}
 .field.consent label{
@@ -461,3 +461,20 @@ p{text-wrap:pretty;}
 .install-actions{display:flex;gap:10px;flex-wrap:wrap;}
 .install-actions .btn{flex:1 1 0;}
 @media (min-width:821px){ .install-hint{display:none;} }
+
+/* ---------- SUNDAYS: centred programme ---------- */
+/* Phones: every row centred, time above the name. Larger screens: times and names meet on a centre line. */
+.oos{max-width:620px;margin-left:auto;margin-right:auto;}
+.oos-row{grid-template-columns:1fr 1fr;gap:0 28px;align-items:baseline;padding:18px 4px;}
+.oos-row .time{text-align:right;}
+.oos-row .item{text-align:left;}
+@media (max-width:600px){
+  .oos-row{grid-template-columns:1fr;justify-items:center;text-align:center;gap:4px;padding:16px 2px;}
+  .oos-row .time,.oos-row .item{text-align:center;}
+}
+
+/* ---------- NEVER MOVE SIDEWAYS ---------- */
+/* The page scrolls up and down only. clip (unlike hidden) keeps the sticky header working. */
+html{overflow-x:clip;overscroll-behavior-x:none;}
+body{overflow-x:clip;overflow-wrap:break-word;touch-action:pan-y pinch-zoom;}
+img,svg,video,canvas,iframe{max-width:100%;}
