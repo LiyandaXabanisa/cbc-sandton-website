@@ -129,8 +129,8 @@ Supabase settings worth checking (Authentication section):
 The domain and a Standard web hosting package are already in the church's xneelo account, and the domain's DNS already points at xneelo's Apache servers. Standard hosting serves static files, which is all this site needs, because the database lives on Supabase. `server.js` does not run on xneelo.
 
 1. In your xneelo control panel (konsoleH), open the hosting package for cbcsandton.co.za and find the FTP details: host name, username and password. Create a separate FTP user for this if the panel allows it.
-2. Install an FTP program such as FileZilla or WinSCP. Use FTPS or SFTP if the package offers it, plain FTP only if it does not.
-3. Open the web root folder on the server (usually `public_html`). xneelo puts a placeholder page there. If the folder holds a default `index.html`, `index.htm`, `index.php` or `default.htm`, delete it or overwrite it, otherwise the placeholder can keep showing instead of the site.
+2. Install WinSCP or FileZilla and connect with **SFTP on port 22** (the server answers on cbcsandton.co.za). Do not use plain FTP, because it sends the password unencrypted.
+3. Open the web root folder on the server (usually `public_html`). xneelo's placeholder page is a file called `index.html`, so uploading the site's own `index.html` replaces it. The domain currently serves that placeholder.
 4. Upload everything inside the project's `public/` folder, including the hidden `.htaccess` file. Turn on "show hidden files" in your FTP program so it is not skipped. Upload the contents, not the `public` folder itself.
 5. Open https://cbcsandton.co.za and check the pages, then follow the checklist below.
 
@@ -147,7 +147,26 @@ After uploading, check:
 * The Tithe and Offering buttons open your payment page.
 * After the Supabase details are in `site.config.js` and re-uploaded: register, approve, invite and log in once for real.
 
-To update the site later, edit the files, test them, and upload the changed ones again. Once one manual upload has worked, the upload can be automated from GitHub.
+To update the site later, edit the files, test them, and upload the changed ones again, or let GitHub do it as below.
+
+### Automatic upload from GitHub
+
+`.github/workflows/xneelo.yml` uploads `public/` to xneelo every time the site changes, and checks that https://cbcsandton.co.za/ then shows the new pages. It stays idle until you add your SFTP login to the repository's secrets. The password goes straight into GitHub and is never written into the project.
+
+1. In the xneelo control panel, find the FTP/SFTP username for the hosting package (create one if there is none) and its password.
+2. In a terminal inside the project, run these. Each one asks you to type the value, and nothing you type is shown:
+
+```bash
+gh secret set XNEELO_FTP_USER
+gh secret set XNEELO_FTP_PASSWORD
+```
+
+3. Only if your details differ from the defaults, also set `XNEELO_FTP_HOST` (default `cbcsandton.co.za`), `XNEELO_FTP_PORT` (default `22`) and `XNEELO_FTP_DIR` (default `public_html`).
+4. Run the first upload: `gh workflow run xneelo.yml`, or use the Actions tab on GitHub.
+
+The server's identity is pinned in `.github/xneelo_known_hosts` (RSA key, fingerprint `SHA256:71NUwh2u39k2eIbqARasmpcP3xJPb7ky/x1HLVJUl9Q`), so the password can only be sent to the real server. Compare that fingerprint with the one in your xneelo panel if it shows one. If xneelo ever moves the site to a different server, replace that file.
+
+The upload adds and updates files but never deletes anything on the server.
 
 ## Put it on GitHub Pages
 

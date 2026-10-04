@@ -1,0 +1,91 @@
+name: Upload site to xneelo
+
+# Copies the contents of /public to the xneelo hosting package over SFTP (encrypted, port 22).
+# It does nothing until the secrets below are added, so it is safe to leave switched on.
+#
+# One time setup: repository Settings > Secrets and variables > Actions > New repository secret
+#   XNEELO_FTP_USER      the SFTP/FTP username from the xneelo control panel
+#   XNEELO_FTP_PASSWORD  its password
+# Optional secrets (the defaults are shown):
+#   XNEELO_FTP_HOST      cbcsandton.co.za
+#   XNEELO_FTP_PORT      22
+#   XNEELO_FTP_DIR       public_html     (the folder the website is served from)
+#
+# The server's identity is pinned in .github/xneelo_known_hosts, so uploads can only go to the
+# real server. If xneelo ever moves the site to a new server, replace that file.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "public/**"
+      - ".github/workflows/xneelo.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: xneelo
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    env:
+      FTP_HOST: ${{ secrets.XNEELO_FTP_HOST }}
+      FTP_USER: ${{ secrets.XNEELO_FTP_USER }}
+      FTP_PASS: ${{ secrets.XNEELO_FTP_PASSWORD }}
+      FTP_PORT: ${{ secrets.XNEELO_FTP_PORT }}
+      FTP_DIR: ${{ secrets.XNEELO_FTP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the xneelo secrets are set
+        id: cfg
+        run: |
+          if [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ]; then
+            echo "The xneelo secrets are not set yet, so nothing was uploaded."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check that every script is valid
+        if: steps.cfg.outputs.go == 'true'
+        run: |
+          for f in public/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Upload with SFTP
+        if: steps.cfg.outputs.go == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+          HOST="${FTP_HOST:-cbcsandton.co.za}"
+          PORT="${FTP_PORT:-22}"
+          DIR="${FTP_DIR:-public_html}"
+          KNOWN="$GITHUB_WORKSPACE/.github/xneelo_known_hosts"
+          lftp -u "$FTP_USER,$FTP_PASS" -p "$PORT" "sftp://$HOST" -e "
+            set cmd:fail-exit yes;
+            set net:max-retries 2;
+            set net:timeout 30;
+            set sftp:auto-confirm no;
+            set sftp:connect-program \"ssh -a -x -o UserKnownHostsFile=$KNOWN -o StrictHostKeyChecking=yes -o HostKeyAlias=cbcsandton.co.za\";
+            mirror -R --verbose --parallel=2 public/ \"$DIR\";
+            bye"
+
+      - name: Check the live site
+        if: steps.cfg.outputs.go == 'true'
+        run: |
+          for i in 1 2 3 4 5; do
+            if curl -fsSL https://cbcsandton.co.za/ | grep -q "Change Bible Church"; then
+              echo "The live site is serving the new pages."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Uploaded, but https://cbcsandton.co.za/ does not show the new site yet."
+          echo "Check that XNEELO_FTP_DIR is the folder the domain is served from."
+          exit 1
