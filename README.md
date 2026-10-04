@@ -49,6 +49,28 @@ Codes work once, expire after 14 days and lock after 5 wrong tries. Deactivating
 
 Leaders sign in with their ChurchHub email and password on the hosted site. In local demo mode, a leader leaves the email empty on the Login page and uses `ADMIN_PASSWORD` from `.env`.
 
+## The demo database (temporary)
+
+GitHub Pages cannot run a database, so until the real ChurchHub database is connected, `public/demo.js` provides a built in **demo database** with sample members, notices and logins. It lives only in the visitor's own browser, and a banner on every page says so.
+
+Demo logins (also available as buttons on the Login page):
+
+| Who | Email | Password |
+| --- | --- | --- |
+| Leader | `leader@demo.example` | `demo1234` |
+| Member | `grace.tau@example.com` | `demo1234` |
+
+Everything works in the demo: registering, approving, inviting a member with a code, activating that login, posting notices, and the member area. In the leaders area, "Reset demo data" puts the sample data back.
+
+When to switch it off:
+
+* It turns itself off as soon as the Supabase details are filled in `site.config.js`.
+* Or set `demo: false` in `site.config.js` (visitors then see "opening soon" messages).
+* To remove it for good, delete `public/demo.js` and its `<script>` lines.
+* It never runs on `localhost`; there you get the real local server. Add `?demo=1` to a page address to try it locally.
+
+Do not leave the demo on for the real launch, because details people type into it are not sent to the church.
+
 ## Run it on your computer
 
 ```bash

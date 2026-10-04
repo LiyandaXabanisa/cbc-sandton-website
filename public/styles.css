@@ -410,3 +410,9 @@ footer{
   font-size:0.92rem;line-height:1.6;color:var(--ink-muted);
 }
 .draft-banner b{color:var(--gold-ink);}
+
+/* ---------- DEMO PREVIEW ---------- */
+.demo-banner{
+  background:var(--gold-100);color:var(--paper-text);text-align:center;padding:9px 16px;
+  font-size:0.82rem;line-height:1.4;border-bottom:1px solid var(--rule-light);
+}

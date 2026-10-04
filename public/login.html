@@ -54,6 +54,15 @@
       <p class="form-status" id="si-error" role="alert"></p>
     </form>
     <p class="switch">First time here? <button class="link" type="button" id="to-activate">Activate your member login</button></p>
+
+    <div class="demo-box" id="demo-box" hidden>
+      <p class="eyebrow">Demo logins</p>
+      <p class="small muted">This is a preview with sample data. Pick a login to try each side of the site.</p>
+      <div class="demo-actions">
+        <button class="btn btn-outline btn-sm" type="button" id="demo-leader">Try as a leader</button>
+        <button class="btn btn-outline btn-sm" type="button" id="demo-member">Try as a member</button>
+      </div>
+    </div>
   </section>
 
   <section class="admin-card narrow" id="activate-view" hidden>
@@ -101,6 +110,7 @@
 
 <script src="site.config.js"></script>
 <script src="api.js"></script>
+<script src="demo.js"></script>
 <script src="login.js"></script>
 </body>
 </html>

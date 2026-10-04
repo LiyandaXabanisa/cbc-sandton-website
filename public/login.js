@@ -101,6 +101,18 @@
     $("#si-email").focus();
   });
 
+  // ----- demo shortcuts -----
+  if (API.demo) {
+    $("#demo-box").hidden = false;
+    var fillDemo = function (email) {
+      $("#si-email").value = email;
+      $("#si-password").value = API.demo.password;
+      $("#si-submit").focus();
+    };
+    $("#demo-leader").addEventListener("click", function () { fillDemo(API.demo.leaderEmail); });
+    $("#demo-member").addEventListener("click", function () { fillDemo(API.demo.memberEmail); });
+  }
+
   // ----- start -----
   if (auth.emailOptional) {
     $("#signin-intro").textContent =

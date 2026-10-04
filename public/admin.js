@@ -410,6 +410,16 @@
   $("#tab-members").addEventListener("click", function () { selectTab("members"); });
   $("#tab-notices").addEventListener("click", function () { selectTab("notices"); });
 
+  // ---------- demo data reset ----------
+  if (API.demo) {
+    $("#demo-reset").hidden = false;
+    $("#demo-reset").addEventListener("click", function () {
+      if (!window.confirm("Reset the demo database back to its original sample data?")) return;
+      API.demo.reset();
+      window.location.replace("login.html");
+    });
+  }
+
   // ---------- sign out and start ----------
   signOutBtn.addEventListener("click", function () {
     API.auth.logout().then(toLogin);

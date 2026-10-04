@@ -14,6 +14,14 @@ window.SITE_CONFIG = {
     offeringLink: "",
   },
 
+  // ---------- Demo database ----------
+  // While no real database is connected, true shows a built in sample database
+  // (fake members, notices and demo logins stored in the visitor's own browser) so
+  // the whole site can be tried out. A banner on every page says it is a demo.
+  // It switches itself off as soon as the Supabase details below are filled in.
+  // Set to false to show "opening soon" messages instead.
+  demo: true,
+
   // ---------- ChurchHub (Supabase) ----------
   // Fill these in to connect the site to the same Supabase project that ChurchHub uses.
   // Registrations then land in ChurchHub's members list, and the members area

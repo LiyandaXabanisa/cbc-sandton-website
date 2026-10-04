@@ -189,6 +189,14 @@ The site does not take payments itself. It sends people to your payment gateway'
 * [ ] Test the payment links end to end
 * [ ] Ask two or three members who are not technical to try it and watch where they hesitate
 
+## 13A. Demo database
+
+* [x] A temporary demo database lets the whole site be tried out on GitHub Pages
+* [x] A banner on every page says it is sample data and nothing is sent to the church
+* [ ] Connect the real database (this switches the demo off by itself)
+* [ ] Confirm the demo banner is gone on the live site before telling anyone to register
+* [ ] Delete `public/demo.js` and its script lines once the real database is in use
+
 ## 14. Launch checklist
 
 1. Content: real address, phone, email, directions, leadership information

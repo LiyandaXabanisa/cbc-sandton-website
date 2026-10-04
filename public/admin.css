@@ -163,3 +163,7 @@ button.link{
   font-family:"JetBrains Mono",monospace;font-size:1.6rem;letter-spacing:0.12em;font-weight:500;user-select:all;
   overflow-wrap:anywhere;
 }
+
+.demo-box{margin-top:26px;padding-top:20px;border-top:1px solid var(--rule-light);}
+.demo-box .eyebrow{color:var(--gold-ink);margin:0 0 6px;}
+.demo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
