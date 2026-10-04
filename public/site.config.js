@@ -9,9 +9,9 @@ window.SITE_CONFIG = {
   // generalLink: used for any button whose own link is left blank.
   // While a button has no link, visitors see a disabled "Link coming soon" button.
   giving: {
-    generalLink: "",
-    titheLink: "",
-    offeringLink: "",
+    generalLink: "https://pos.snapscan.io/qr/PXMP9891",
+    titheLink: "https://pos.snapscan.io/qr/PXMP9891",
+    offeringLink: "https://pos.snapscan.io/qr/PXMP9891",
   },
 
   // ---------- Demo database ----------
@@ -20,7 +20,12 @@ window.SITE_CONFIG = {
   // the whole site can be tried out. A banner on every page says it is a demo.
   // It switches itself off as soon as the Supabase details below are filled in.
   // Set to false to show "opening soon" messages instead.
+  // demoHosts lists the addresses that get the demo. The default is only the GitHub
+  // preview, so the real domain (cbcsandton.co.za) shows "opening soon" messages
+  // until the real database is connected. Add ?demo=1 to any page address to try the
+  // demo anywhere.
   demo: true,
+  demoHosts: ["github.io"],
 
   // ---------- ChurchHub (Supabase) ----------
   // Fill these in to connect the site to the same Supabase project that ChurchHub uses.

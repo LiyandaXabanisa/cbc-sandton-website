@@ -7,7 +7,7 @@
 // showcase. Nothing is ever sent anywhere.
 //
 // It switches itself on only when:
-//   * site.config.js has  demo: true  and the site is not running on localhost, or
+//   * site.config.js has  demo: true  and the address is one of demoHosts (default github.io), or
 //   * the address ends with  ?demo=1  (handy for trying it on your own computer)
 // and it switches itself off the moment the Supabase details are filled in.
 // To remove it for good, delete this file and its <script> tags.
@@ -18,10 +18,16 @@
   if (sb.url && sb.anonKey && sb.churchId) return; // a real database is connected
 
   var loc = window.location || {};
-  var host = loc.hostname || "";
-  var onLocalhost = host === "localhost" || host === "127.0.0.1" || host === "";
+  var host = (loc.hostname || "").toLowerCase();
   var forced = /[?&]demo=1(&|$)/.test(loc.search || "");
-  if (!(forced || (cfg.demo === true && !onLocalhost))) return;
+  // Only the addresses listed in demoHosts (default: the GitHub preview) get the demo,
+  // so the real church domain never shows sample data by accident.
+  var demoHosts = Array.isArray(cfg.demoHosts) ? cfg.demoHosts : ["github.io"];
+  var onDemoHost = demoHosts.some(function (h) {
+    h = String(h).toLowerCase();
+    return host === h || host.slice(-(h.length + 1)) === "." + h;
+  });
+  if (!(forced || (cfg.demo === true && onDemoHost))) return;
 
   var LEADER_EMAIL = "leader@demo.example";
   var MEMBER_EMAIL = "grace.tau@example.com";

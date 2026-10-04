@@ -120,7 +120,6 @@
   } else {
     $("#si-email").required = true;
     $("#signin-intro").textContent = "Members and church leaders sign in with their email and password.";
-  }
 
   auth
     .session()

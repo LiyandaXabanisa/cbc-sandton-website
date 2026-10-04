@@ -1,6 +1,5 @@
 # Change Bible Church Sandton website
 
-A simple, mobile first website for Change Bible Church Sandton (CBC Sandton), a branch of Change Bible Church.
 
 * Vision, 2026 theme (Open Doors) and Sunday order of service
 * New member registration with consent
@@ -108,6 +107,31 @@ Supabase settings worth checking (Authentication section):
 
 * Email confirmation: if it is on, new members must click a confirmation email before they can finish activating. Supabase's built in email sender is heavily limited, so for the live site set up your own SMTP provider. If it is off, activation finishes in one step and the invite code is what proves who the person is.
 * Leaders need a ChurchHub account that belongs to your church. Anyone else who signs up gets no access to any data.
+
+## Hosting on xneelo (cbcsandton.co.za)
+
+The domain and a Standard web hosting package are already in the church's xneelo account, and the domain's DNS already points at xneelo's Apache servers. Standard hosting serves static files, which is all this site needs, because the database lives on Supabase. `server.js` does not run on xneelo.
+
+1. In your xneelo control panel (konsoleH), open the hosting package for cbcsandton.co.za and find the FTP details: host name, username and password. Create a separate FTP user for this if the panel allows it.
+2. Install an FTP program such as FileZilla or WinSCP. Use FTPS or SFTP if the package offers it, plain FTP only if it does not.
+3. Open the web root folder on the server (usually `public_html`). xneelo puts a placeholder page there. If the folder holds a default `index.html`, `index.htm`, `index.php` or `default.htm`, delete it or overwrite it, otherwise the placeholder can keep showing instead of the site.
+4. Upload everything inside the project's `public/` folder, including the hidden `.htaccess` file. Turn on "show hidden files" in your FTP program so it is not skipped. Upload the contents, not the `public` folder itself.
+5. Open https://cbcsandton.co.za and check the pages, then follow the checklist below.
+
+Do not upload `server.js`, `data/`, `.env`, `node_modules/`, `supabase/`, `docs/` or any `.git` files.
+
+What `public/.htaccess` does: sends visitors to the secure address, stops folder listings, adds basic protection headers and lets browsers keep images for a while. If the site ever shows "too many redirects", delete the redirect block in that file.
+
+On the real domain the demo database is off, so until the real database is connected, registration and login show friendly "opening soon" messages. The demo only runs on the GitHub preview address (`demoHosts` in `site.config.js`).
+
+After uploading, check:
+
+* Every page loads with its images and styles, on a phone as well.
+* http://cbcsandton.co.za jumps to https://.
+* The Tithe and Offering buttons open your payment page.
+* After the Supabase details are in `site.config.js` and re-uploaded: register, approve, invite and log in once for real.
+
+To update the site later, edit the files, test them, and upload the changed ones again. Once one manual upload has worked, the upload can be automated from GitHub.
 
 ## Put it on GitHub Pages
 
