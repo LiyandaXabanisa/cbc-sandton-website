@@ -124,6 +124,21 @@ Supabase settings worth checking (Authentication section):
 * Email confirmation: if it is on, new members must click a confirmation email before they can finish activating. Supabase's built in email sender is heavily limited, so for the live site set up your own SMTP provider. If it is off, activation finishes in one step and the invite code is what proves who the person is.
 * Leaders need a ChurchHub account that belongs to your church. Anyone else who signs up gets no access to any data.
 
+## Installable app and offline use
+
+The site is also a home screen app. Nothing extra to build: it is the same pages with a small service worker (`public/sw.js`), a manifest (`public/manifest.webmanifest`) and icons (`public/assets/icon-*.png`).
+
+* **Android (Chrome):** a small card offers to install after a few seconds. Or use the browser menu and choose Install app.
+* **iPhone (Safari):** tap Share, then Add to Home Screen. A card explains this the first time.
+* Long pressing the app icon offers shortcuts to Give, Login and Register.
+* The card only shows on phone sized screens, and "Not now" hides it for 30 days.
+
+How offline works: pages and scripts are always fetched fresh when there is a connection, and the last copy is used when there is not (or when the network takes more than 4 seconds). Images are kept on the phone. Logins, the database and payment pages are never stored. A page that was never opened before shows `public/offline.html`, which lists the Sunday times and the address. If the Sunday times change, update that file as well as the home page.
+
+Releasing changes needs no extra step, because new files are fetched whenever the phone is online. Only if you ever need every phone to throw away its saved copies, change `VERSION` at the top of `public/sw.js`.
+
+Service workers only run on https:// addresses and on localhost, so the xneelo site gets this once HTTPS is on. Note that the built in preview browser inside some tools blocks service workers; test in Chrome or Edge.
+
 ## Hosting on xneelo (cbcsandton.co.za)
 
 The domain and a Standard web hosting package are already in the church's xneelo account, and the domain's DNS already points at xneelo's Apache servers. Standard hosting serves static files, which is all this site needs, because the database lives on Supabase. `server.js` does not run on xneelo.

@@ -32,3 +32,13 @@ ErrorDocument 404 /404.html
   ExpiresByType application/javascript "access plus 1 hour"
   ExpiresByType text/javascript "access plus 1 hour"
 </IfModule>
+
+# Home screen app files.
+AddType application/manifest+json .webmanifest
+
+# These must always be re-checked so a new release reaches phones quickly.
+<IfModule mod_headers.c>
+  <FilesMatch "^(sw\.js|manifest\.webmanifest|site\.config\.js)$">
+    Header always set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
