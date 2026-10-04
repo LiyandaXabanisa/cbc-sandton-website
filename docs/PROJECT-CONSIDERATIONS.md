@@ -24,7 +24,9 @@ Websites go stale when nobody is responsible for them.
 
 * [ ] Name one person who owns the content and one backup
 * [ ] Decide how often Sunday times, announcements and the theme are reviewed
-* [ ] Add the real street address, phone number and email (the Visit section has a placeholder for this)
+* [x] Real street address added to the Visit section, with a directions link
+* [ ] Confirm the address is complete (it reads "76 Bevan", so check whether it needs Road, Street or Avenue)
+* [ ] Add the church phone number and email address (also needed in the privacy notice)
 * [ ] Add a map link or directions, plus parking and accessibility information
 * [ ] Confirm the Bible translation used for the theme verses and add the correct attribution
 * [ ] Check the translation publisher's rules for quoting scripture on a website
@@ -169,7 +171,7 @@ The site does not take payments itself. It sends people to your payment gateway'
 * [ ] Add social media and WhatsApp channel links
 * [ ] Add a social sharing image (the logo on navy works well)
 * [ ] Decide whether analytics is wanted; if so choose a privacy friendly one and mention it in the privacy notice
-* [ ] Add structured data (church name, address, service times) once the address is final
+* [x] Structured data added for search engines (church name, address, website); add service times later
 
 ## 11. Running it week to week
 
