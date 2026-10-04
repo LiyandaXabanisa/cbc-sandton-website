@@ -20,7 +20,7 @@
       <img src="assets/emblem-navy.png" alt="">
       <span class="brand-text">
         <span class="name">CBC SANDTON</span><br>
-        <span class="place">Members area</span>
+        <span class="place">Leaders area</span>
       </span>
     </a>
     <div class="admin-nav">
@@ -32,7 +32,7 @@
 
 <main class="admin" id="main">
 
-  <section class="admin-card" id="loading-view">
+  <section class="admin-card narrow" id="loading-view">
     <p class="muted">Loading&hellip;</p>
   </section>
 
@@ -41,57 +41,56 @@
     <p id="notice-body" class="muted"></p>
   </section>
 
-  <section class="admin-card narrow" id="login-view" hidden>
-    <h1>Sign in</h1>
-    <p class="muted" id="login-intro">For church leaders and admins only.</p>
-    <form id="login-form" novalidate>
-      <div class="field" id="login-email-field" hidden>
-        <label for="login-email">Email</label>
-        <input id="login-email" type="email" autocomplete="username">
-      </div>
-      <div class="field">
-        <label for="login-password">Password</label>
-        <input id="login-password" type="password" autocomplete="current-password" required>
-      </div>
-      <button class="btn btn-gold" type="submit" id="login-submit">Sign in</button>
-      <p class="form-status" id="login-error" role="alert"></p>
-    </form>
-  </section>
-
   <section id="app-view" hidden>
     <div class="admin-head">
       <div>
-        <h1>Members</h1>
+        <h1 id="page-title">Members</h1>
         <p class="muted" id="mode-note"></p>
       </div>
-      <div class="admin-actions">
+      <div class="admin-actions" id="members-actions">
         <button class="btn btn-gold" id="add-member" type="button">Add member</button>
         <button class="btn btn-outline" id="export-csv" type="button">Export CSV</button>
       </div>
+      <div class="admin-actions" id="notices-actions" hidden>
+        <button class="btn btn-gold" id="add-notice" type="button">New notice</button>
+      </div>
     </div>
 
-    <div class="filters" role="group" aria-label="Filter members by status" id="filters"></div>
-
-    <div class="search">
-      <label class="sr-only" for="search">Search members</label>
-      <input id="search" type="search" placeholder="Search by name, email or phone" autocomplete="off">
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-members" aria-selected="true" aria-controls="panel-members" type="button">Members</button>
+      <button class="tab" role="tab" id="tab-notices" aria-selected="false" aria-controls="panel-notices" type="button">Notices</button>
     </div>
 
-    <div class="table-wrap">
-      <table class="members" id="members-table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Contact</th>
-            <th scope="col">Status</th>
-            <th scope="col">Registered</th>
-            <th scope="col"><span class="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody id="members-body"></tbody>
-      </table>
+    <div id="panel-members" role="tabpanel" aria-labelledby="tab-members">
+      <div class="filters" role="group" aria-label="Filter members by status" id="filters"></div>
+
+      <div class="search">
+        <label class="sr-only" for="search">Search members</label>
+        <input id="search" type="search" placeholder="Search by name, email or phone" autocomplete="off">
+      </div>
+
+      <div class="table-wrap">
+        <table class="members" id="members-table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Contact</th>
+              <th scope="col">Status</th>
+              <th scope="col">Registered</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="members-body"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="empty" hidden></p>
     </div>
-    <p class="empty" id="empty" hidden></p>
+
+    <div id="panel-notices" role="tabpanel" aria-labelledby="tab-notices" hidden>
+      <p class="muted notices-intro">Notices appear in the member area, and only for signed-in members.</p>
+      <div id="notices-list"></div>
+      <p class="empty" id="notices-empty" hidden>No notices yet. Use New notice to post the first one.</p>
+    </div>
   </section>
 
   <dialog id="member-dialog" aria-labelledby="dialog-title">
@@ -119,6 +118,40 @@
         <button class="btn btn-gold" type="submit" id="member-save">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="notice-dialog" aria-labelledby="notice-dialog-title">
+    <form id="notice-form" novalidate>
+      <h2 id="notice-dialog-title">New notice</h2>
+      <div class="field">
+        <label for="n-title">Title</label>
+        <input id="n-title" type="text" maxlength="120" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label for="n-body">Message</label>
+        <textarea id="n-body" rows="6" maxlength="4000" required></textarea>
+      </div>
+      <div class="field check">
+        <input id="n-published" type="checkbox" checked>
+        <label for="n-published">Visible to members</label>
+      </div>
+      <p class="form-status" id="notice-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="notice-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="notice-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="invite-dialog" aria-labelledby="invite-title">
+    <h2 id="invite-title">Invite code</h2>
+    <p class="muted" id="invite-text"></p>
+    <p class="invite-code" id="invite-code" aria-live="polite"></p>
+    <p class="muted small">Tell them to open the Login page, choose "Activate your member login", and enter their email and this code. It works once and is not shown again.</p>
+    <div class="dialog-actions">
+      <button class="btn btn-outline" type="button" id="invite-copy">Copy code</button>
+      <button class="btn btn-gold" type="button" id="invite-close">Done</button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

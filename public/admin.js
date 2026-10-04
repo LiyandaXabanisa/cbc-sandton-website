@@ -26,12 +26,7 @@
     return el;
   }
 
-  var views = {
-    loading: $("#loading-view"),
-    notice: $("#notice-view"),
-    login: $("#login-view"),
-    app: $("#app-view"),
-  };
+  var views = { loading: $("#loading-view"), notice: $("#notice-view"), app: $("#app-view") };
   var signOutBtn = $("#signout");
 
   function show(name) {
@@ -39,6 +34,10 @@
       views[k].hidden = k !== name;
     });
     signOutBtn.hidden = name !== "app";
+  }
+
+  function toLogin() {
+    window.location.replace("login.html");
   }
 
   var toastTimer;
@@ -54,6 +53,7 @@
 
   // ---------- state ----------
   var members = [];
+  var notices = [];
   var filter = "all";
   var query = "";
 
@@ -82,7 +82,7 @@
     });
   }
 
-  // ---------- render ----------
+  // ---------- members: render ----------
   function renderFilters() {
     var box = $("#filters");
     box.replaceChildren();
@@ -97,7 +97,7 @@
             "aria-pressed": String(filter === f.key),
             onclick: function () {
               filter = f.key;
-              render();
+              renderMembers();
             },
           },
           h("span", { class: "count", text: String(count) }),
@@ -116,11 +116,12 @@
     if (m.status === "pending") {
       actions.append(actionButton("Approve", "btn-gold", function () { setStatus(m, "active", "Approved " + m.fullName); }));
     } else if (m.status === "active") {
+      if (!m.hasAccount) actions.append(actionButton("Invite", "btn-outline", function () { invite(m); }));
       actions.append(actionButton("Deactivate", "btn-outline", function () { setStatus(m, "inactive", "Deactivated " + m.fullName); }));
     } else {
       actions.append(actionButton("Reactivate", "btn-outline", function () { setStatus(m, "active", "Reactivated " + m.fullName); }));
     }
-    actions.append(actionButton("Edit", "btn-outline", function () { openDialog(m); }));
+    actions.append(actionButton("Edit", "btn-outline", function () { openMemberDialog(m); }));
     actions.append(actionButton(m.status === "pending" ? "Decline" : "Delete", "btn-danger", function () { removeMember(m); }));
 
     var contact = h("td", { "data-label": "Contact" });
@@ -131,18 +132,21 @@
     var nameCell = h("td", { "data-label": "Name" }, h("span", { class: "name", text: m.fullName }));
     if (m.notes) nameCell.append(h("span", { class: "note", text: m.notes }));
 
+    var statusCell = h("td", { "data-label": "Status" }, h("span", { class: "pill " + m.status, text: m.status }));
+    if (m.hasAccount) statusCell.append(" ", h("span", { class: "pill login", text: "has login" }));
+
     return h(
       "tr",
       null,
       nameCell,
       contact,
-      h("td", { "data-label": "Status" }, h("span", { class: "pill " + m.status, text: m.status })),
+      statusCell,
       h("td", { class: "date", "data-label": "Registered", text: formatDate(m.createdAt) }),
       h("td", { class: "actions" }, actions)
     );
   }
 
-  function render() {
+  function renderMembers() {
     renderFilters();
     var list = visibleMembers();
     var body = $("#members-body");
@@ -158,26 +162,23 @@
     }
   }
 
-  // ---------- actions ----------
+  // ---------- members: actions ----------
   function handleError(err) {
-    if (err && err.auth) {
-      showLogin(err.message || "Your session has expired. Please sign in again.");
-    } else {
-      toast((err && err.message) || "Something went wrong. Please try again.", true);
-    }
+    if (err && err.auth) return toLogin();
+    toast((err && err.message) || "Something went wrong. Please try again.", true);
   }
 
-  function reload() {
+  function reloadMembers() {
     return admin.list().then(function (list) {
       members = list;
-      render();
+      renderMembers();
     });
   }
 
   function setStatus(m, status, doneMessage) {
     admin
       .update(m.id, { status: status, joinedAt: m.joinedAt })
-      .then(reload)
+      .then(reloadMembers)
       .then(function () { toast(doneMessage); })
       .catch(handleError);
   }
@@ -187,17 +188,45 @@
     if (!window.confirm(what + " " + m.fullName + "? This can't be undone.")) return;
     admin
       .remove(m.id)
-      .then(reload)
+      .then(reloadMembers)
       .then(function () { toast("Removed " + m.fullName); })
       .catch(handleError);
   }
 
-  // ---------- add / edit dialog ----------
+  // ---------- invite codes ----------
+  var inviteDialog = $("#invite-dialog");
+
+  function invite(m) {
+    if (!m.email) return toast("Add an email address for " + m.fullName + " first.", true);
+    admin
+      .invite(m.id)
+      .then(function (r) {
+        $("#invite-text").textContent = "Give this code to " + m.fullName + " (" + m.email + "). It expires on " + formatDate(r.expiresAt) + ".";
+        $("#invite-code").textContent = r.code;
+        inviteDialog.showModal();
+      })
+      .catch(handleError);
+  }
+
+  $("#invite-close").addEventListener("click", function () {
+    $("#invite-code").textContent = "";
+    inviteDialog.close();
+  });
+  $("#invite-copy").addEventListener("click", function () {
+    var code = $("#invite-code").textContent;
+    if (!navigator.clipboard) return toast("Select the code and copy it by hand.", true);
+    navigator.clipboard.writeText(code).then(
+      function () { toast("Code copied"); },
+      function () { toast("Couldn't copy. Select the code and copy it by hand.", true); }
+    );
+  });
+
+  // ---------- members: add / edit dialog ----------
   var dialog = $("#member-dialog");
   var memberForm = $("#member-form");
   var editing = null;
 
-  function openDialog(m) {
+  function openMemberDialog(m) {
     editing = m || null;
     $("#dialog-title").textContent = m ? "Edit member" : "Add member";
     $("#m-name").value = m ? m.fullName : "";
@@ -209,7 +238,7 @@
     $("#m-name").focus();
   }
 
-  $("#add-member").addEventListener("click", function () { openDialog(null); });
+  $("#add-member").addEventListener("click", function () { openMemberDialog(null); });
   $("#member-cancel").addEventListener("click", function () { dialog.close(); });
 
   memberForm.addEventListener("submit", function (e) {
@@ -221,32 +250,25 @@
       phone: $("#m-phone").value.trim(),
       notes: $("#m-notes").value.trim(),
     };
-    if (data.fullName.length < 2) {
-      err.textContent = "Please enter the member's full name.";
+    function fail(message) {
+      err.textContent = message;
       err.className = "form-status show error";
-      return;
     }
-    if (!data.email && !data.phone) {
-      err.textContent = "Provide an email address or a phone number.";
-      err.className = "form-status show error";
-      return;
-    }
+    if (data.fullName.length < 2) return fail("Please enter the member's full name.");
+    if (!data.email && !data.phone) return fail("Provide an email address or a phone number.");
+
     var save = $("#member-save");
     save.disabled = true;
     var job = editing ? admin.update(editing.id, data) : admin.create(data);
     job
-      .then(reload)
+      .then(reloadMembers)
       .then(function () {
         dialog.close();
         toast(editing ? "Saved changes" : "Added " + data.fullName);
       })
       .catch(function (e2) {
-        if (e2 && e2.auth) {
-          dialog.close();
-          return handleError(e2);
-        }
-        err.textContent = (e2 && e2.message) || "Couldn't save. Please try again.";
-        err.className = "form-status show error";
+        if (e2 && e2.auth) return toLogin();
+        fail((e2 && e2.message) || "Couldn't save. Please try again.");
       })
       .then(function () { save.disabled = false; });
   });
@@ -277,84 +299,144 @@
     toast("Exported " + list.length + (list.length === 1 ? " member" : " members"));
   });
 
-  // ---------- search ----------
   $("#search").addEventListener("input", function (e) {
     query = e.target.value;
-    render();
+    renderMembers();
   });
 
-  // ---------- sign in / out ----------
+  // ---------- notices ----------
+  function renderNotices() {
+    var box = $("#notices-list");
+    box.replaceChildren();
+    $("#notices-empty").hidden = notices.length > 0;
+    notices.forEach(function (n) {
+      var head = h(
+        "div",
+        { class: "notice-head" },
+        h("h3", { text: n.title }),
+        h("span", { class: "pill " + (n.published ? "active" : "inactive"), text: n.published ? "visible" : "hidden" })
+      );
+      var actions = h(
+        "div",
+        { class: "row-actions" },
+        actionButton("Edit", "btn-outline", function () { openNoticeDialog(n); }),
+        actionButton(n.published ? "Hide" : "Show", "btn-outline", function () {
+          admin.notices
+            .update(n.id, { title: n.title, body: n.body, published: !n.published })
+            .then(reloadNotices)
+            .catch(handleError);
+        }),
+        actionButton("Delete", "btn-danger", function () {
+          if (!window.confirm("Delete the notice “" + n.title + "”? This can't be undone.")) return;
+          admin.notices.remove(n.id).then(reloadNotices).then(function () { toast("Notice deleted"); }).catch(handleError);
+        })
+      );
+      box.append(
+        h(
+          "article",
+          { class: "notice-card" },
+          head,
+          h("p", { class: "notice-date", text: formatDate(n.createdAt) }),
+          h("p", { class: "notice-body", text: n.body }),
+          actions
+        )
+      );
+    });
+  }
+
+  function reloadNotices() {
+    return admin.notices.list().then(function (list) {
+      notices = list;
+      renderNotices();
+    });
+  }
+
+  var noticeDialog = $("#notice-dialog");
+  var editingNotice = null;
+
+  function openNoticeDialog(n) {
+    editingNotice = n || null;
+    $("#notice-dialog-title").textContent = n ? "Edit notice" : "New notice";
+    $("#n-title").value = n ? n.title : "";
+    $("#n-body").value = n ? n.body : "";
+    $("#n-published").checked = n ? n.published : true;
+    $("#notice-error").className = "form-status";
+    noticeDialog.showModal();
+    $("#n-title").focus();
+  }
+
+  $("#add-notice").addEventListener("click", function () { openNoticeDialog(null); });
+  $("#notice-cancel").addEventListener("click", function () { noticeDialog.close(); });
+
+  $("#notice-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var err = $("#notice-error");
+    var data = { title: $("#n-title").value.trim(), body: $("#n-body").value.trim(), published: $("#n-published").checked };
+    function fail(message) {
+      err.textContent = message;
+      err.className = "form-status show error";
+    }
+    if (!data.title) return fail("Give the notice a title.");
+    if (!data.body) return fail("Write the notice text.");
+
+    var save = $("#notice-save");
+    save.disabled = true;
+    var job = editingNotice ? admin.notices.update(editingNotice.id, data) : admin.notices.create(data);
+    job
+      .then(reloadNotices)
+      .then(function () {
+        noticeDialog.close();
+        toast(editingNotice ? "Notice updated" : "Notice posted");
+      })
+      .catch(function (e2) {
+        if (e2 && e2.auth) return toLogin();
+        fail((e2 && e2.message) || "Couldn't save. Please try again.");
+      })
+      .then(function () { save.disabled = false; });
+  });
+
+  // ---------- tabs ----------
+  function selectTab(name) {
+    var isMembers = name === "members";
+    $("#tab-members").setAttribute("aria-selected", String(isMembers));
+    $("#tab-notices").setAttribute("aria-selected", String(!isMembers));
+    $("#panel-members").hidden = !isMembers;
+    $("#panel-notices").hidden = isMembers;
+    $("#members-actions").hidden = !isMembers;
+    $("#notices-actions").hidden = isMembers;
+    $("#page-title").textContent = isMembers ? "Members" : "Notices";
+    if (!isMembers) reloadNotices().catch(handleError);
+  }
+  $("#tab-members").addEventListener("click", function () { selectTab("members"); });
+  $("#tab-notices").addEventListener("click", function () { selectTab("notices"); });
+
+  // ---------- sign out and start ----------
+  signOutBtn.addEventListener("click", function () {
+    API.auth.logout().then(toLogin);
+  });
+
   function showNotice(title, body) {
     $("#notice-title").textContent = title;
     $("#notice-body").textContent = body;
     show("notice");
   }
 
-  function showLogin(message) {
-    $("#login-email-field").hidden = !admin.needsEmail;
-    $("#login-intro").textContent = admin.needsEmail
-      ? "Use your ChurchHub login. For church leaders and admins only."
-      : "For church leaders and admins only.";
-    var err = $("#login-error");
-    err.textContent = message || "";
-    err.className = message ? "form-status show error" : "form-status";
-    $("#login-password").value = "";
-    show("login");
-    (admin.needsEmail ? $("#login-email") : $("#login-password")).focus();
-  }
-
-  $("#login-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var btn = $("#login-submit");
-    var err = $("#login-error");
-    err.className = "form-status";
-    btn.disabled = true;
-    admin
-      .login({ email: $("#login-email").value.trim(), password: $("#login-password").value })
-      .then(start)
-      .catch(function (ex) {
-        err.textContent = (ex && ex.message) || "Couldn't sign in. Please try again.";
-        err.className = "form-status show error";
-      })
-      .then(function () { btn.disabled = false; });
-  });
-
-  signOutBtn.addEventListener("click", function () {
-    admin.logout().then(function () {
-      members = [];
-      showLogin();
-    });
-  });
-
-  function start() {
-    $("#mode-note").textContent = API.modeLabel;
-    return reload()
-      .then(function () { show("app"); })
-      .catch(function (err) {
-        if (err && err.auth) return showLogin(err.message);
-        showNotice("Couldn't load members", (err && err.message) || "Please refresh the page and try again.");
-      });
-  }
-
-  function boot() {
-    show("loading");
-    admin.status().then(function (state) {
-      if (state === "unavailable") {
+  API.auth
+    .session()
+    .then(function (s) {
+      if (!s || s.role === "unlinked") return toLogin();
+      if (s.role === "member") return window.location.replace("member.html");
+      $("#mode-note").textContent = API.modeLabel;
+      return reloadMembers().then(function () { show("app"); });
+    })
+    .catch(function (err) {
+      if (err && err.auth) return toLogin();
+      if (err && err.unavailable) {
         return showNotice(
-          "Members area isn't switched on",
+          "Leaders area isn't switched on",
           "This site isn't connected to a database yet. Add your ChurchHub (Supabase) details to site.config.js, or run the site locally with npm start."
         );
       }
-      if (state === "unconfigured") {
-        return showNotice(
-          "Set an admin password",
-          "Add ADMIN_PASSWORD to the .env file next to server.js (see .env.example), then restart the server."
-        );
-      }
-      if (state === "signed-in") return start();
-      showLogin();
+      showNotice("Couldn't load members", (err && err.message) || "Please refresh the page and try again.");
     });
-  }
-
-  boot();
 })();

@@ -75,6 +75,22 @@ The Protection of Personal Information Act (POPIA) applies as soon as the site c
 * [ ] Keep a short written record of who can see member data and why
 * [ ] Know what to do if data is lost or exposed (who is told, and how quickly)
 
+## 5A. Member logins and notices
+
+* [x] One Login page for members and leaders, each sent to the right area
+* [x] Members get a login only through a one time invite code from a leader, so a stranger cannot claim someone else's record
+* [x] Codes expire after 14 days and lock after 5 wrong tries
+* [x] Members can change only their own name and phone, never their status or anyone else's details
+* [x] Deactivating or deleting a member cuts off their access straight away
+* [x] Leaders can post, hide and delete notices that only signed-in members can read
+* [ ] Decide who is allowed to invite members and post notices (every ChurchHub staff login can)
+* [ ] Decide what belongs in notices: nothing about named individuals, no medical or counselling details
+* [ ] Agree what happens when someone loses their password (a leader can issue a new invite today; a password reset email needs your own email sending set up)
+* [ ] Set up an email sender (SMTP) for the Supabase project before launch, because the built in sender is heavily limited
+* [ ] Decide whether email confirmation should be on for new logins
+* [ ] Tell members how to activate: ask a leader for a code, then use Login > Activate
+* [ ] Later: members updating their own email, prayer requests, event sign up, giving history
+
 ## 6. Tithes and offerings
 
 The site does not take payments itself. It sends people to your payment gateway's page, which keeps card details off the church website.

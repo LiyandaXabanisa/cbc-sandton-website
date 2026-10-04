@@ -2,12 +2,16 @@
 //
 // Two interchangeable back ends behind one interface:
 //   "supabase": used when site.config.js has url + anonKey + churchId (the hosted setup,
-//                shares data with ChurchHub).
+//               shares data with ChurchHub).
 //   "local": the small Express server in server.js (zero setup, used for demos).
 //
 // Member shape used by the UI:
 //   { id, fullName, email, phone, notes, status: "pending"|"active"|"inactive",
-//     source, createdAt, joinedAt }
+//     source, createdAt, joinedAt, hasAccount }
+//
+// API.auth.session() resolves to null or { role: "admin" | "member" | "unlinked" }.
+// "unlinked" (hosted mode only) means the person has a login but has not yet
+// entered the invite code that connects it to their member record.
 
 (function () {
   var cfg = window.SITE_CONFIG || {};
@@ -32,6 +36,8 @@
     });
   }
 
+  function noop() {}
+
   // ===================================================================
   // Local (Express) back end
   // ===================================================================
@@ -55,51 +61,107 @@
     });
   }
 
+  function send(method, body) {
+    return { method: method, body: body === undefined ? undefined : JSON.stringify(body) };
+  }
+
   var localApi = {
     mode: "local",
-    modeLabel: "Local mode: members are saved on this computer",
+    modeLabel: "Local mode: details are saved on this computer",
     register: function (p) {
-      return local("api/register", { method: "POST", body: JSON.stringify(p) }).then(function (d) {
+      return local("api/register", send("POST", p)).then(function (d) {
         return d.message;
       });
     },
-    admin: {
-      needsEmail: false,
-      status: function () {
-        return local("api/admin/session")
-          .then(function () {
-            return "signed-in";
+    auth: {
+      emailOptional: true, // leaders can leave the email empty and use the admin password
+      session: function () {
+        return local("api/me")
+          .then(function (d) {
+            return { role: d.role };
           })
           .catch(function (e) {
-            if (e.auth) return "signed-out";
-            return e.unavailable ? (/set up/.test(e.message) ? "unconfigured" : "unavailable") : "unavailable";
+            if (e.auth) return null;
+            throw e;
           });
       },
       login: function (c) {
-        return local("api/admin/login", { method: "POST", body: JSON.stringify({ password: c.password }) });
+        return local("api/login", send("POST", { email: c.email, password: c.password })).then(function (d) {
+          return { role: d.role };
+        });
+      },
+      activate: function (c) {
+        return local("api/member/activate", send("POST", c)).then(function (d) {
+          return { role: d.role };
+        });
+      },
+      claim: function () {
+        return Promise.reject(ApiError("Use the invite code on the activate form."));
       },
       logout: function () {
-        return local("api/admin/logout", { method: "POST" }).catch(function () {});
+        return local("api/logout", send("POST")).then(noop, noop);
       },
+    },
+    admin: {
       list: function () {
         return local("api/admin/members").then(function (d) {
           return d.members;
         });
       },
       create: function (m) {
-        return local("api/admin/members", { method: "POST", body: JSON.stringify(m) }).then(function (d) {
+        return local("api/admin/members", send("POST", m)).then(function (d) {
           return d.member;
         });
       },
       update: function (id, patch) {
-        return local("api/admin/members/" + encodeURIComponent(id), { method: "PATCH", body: JSON.stringify(patch) }).then(
-          function (d) {
-            return d.member;
-          }
-        );
+        return local("api/admin/members/" + encodeURIComponent(id), send("PATCH", patch)).then(function (d) {
+          return d.member;
+        });
       },
       remove: function (id) {
-        return local("api/admin/members/" + encodeURIComponent(id), { method: "DELETE" }).then(function () {});
+        return local("api/admin/members/" + encodeURIComponent(id), send("DELETE")).then(noop);
+      },
+      invite: function (id) {
+        return local("api/admin/members/" + encodeURIComponent(id) + "/invite", send("POST")).then(function (d) {
+          return { code: d.code, expiresAt: d.expiresAt };
+        });
+      },
+      notices: {
+        list: function () {
+          return local("api/admin/notices").then(function (d) {
+            return d.notices;
+          });
+        },
+        create: function (n) {
+          return local("api/admin/notices", send("POST", n)).then(function (d) {
+            return d.notice;
+          });
+        },
+        update: function (id, n) {
+          return local("api/admin/notices/" + encodeURIComponent(id), send("PATCH", n)).then(function (d) {
+            return d.notice;
+          });
+        },
+        remove: function (id) {
+          return local("api/admin/notices/" + encodeURIComponent(id), send("DELETE")).then(noop);
+        },
+      },
+    },
+    member: {
+      me: function () {
+        return local("api/member/me").then(function (d) {
+          return d.member;
+        });
+      },
+      update: function (p) {
+        return local("api/member/me", send("PATCH", p)).then(function (d) {
+          return d.member;
+        });
+      },
+      notices: function () {
+        return local("api/member/notices").then(function (d) {
+          return d.notices;
+        });
       },
     },
   };
@@ -186,6 +248,10 @@
       });
   }
 
+  function rpc(name, body) {
+    return sbRequest("/rest/v1/rpc/" + name, { method: "POST", body: JSON.stringify(body || {}) }, true);
+  }
+
   function fromRow(r) {
     var pending = !r.is_active && r.source === "website" && !r.joined_at;
     return {
@@ -198,6 +264,7 @@
       source: r.source || "app",
       createdAt: r.created_at,
       joinedAt: r.joined_at || null,
+      hasAccount: !!r.user_id,
     };
   }
 
@@ -217,6 +284,17 @@
     return o;
   }
 
+  function fromNotice(r) {
+    return {
+      id: r.id,
+      title: r.title,
+      body: r.body,
+      published: r.is_published !== false,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    };
+  }
+
   var churchIdPromise = null;
   function adminChurchId() {
     // Use the church the signed-in user actually belongs to, not the public config value.
@@ -230,6 +308,44 @@
       });
     }
     return churchIdPromise;
+  }
+
+  // Staff have a ChurchHub profile row. Members have a linked member record.
+  function resolveRole() {
+    return sbRequest("/rest/v1/profiles?select=church_id&limit=1", { method: "GET" }, true).then(function (rows) {
+      if (rows && rows.length) return { role: "admin" };
+      return rpc("my_member").then(function (mine) {
+        return { role: mine && mine.length ? "member" : "unlinked" };
+      });
+    });
+  }
+
+  function passwordGrant(email, password) {
+    return fetch(SB_URL + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { apikey: sb.anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: password }),
+    }).then(function (res) {
+      return readJson(res).then(function (data) {
+        if (!res.ok || !data || !data.access_token) {
+          var detail = sbMessage(data, "");
+          var err = ApiError(
+            /not confirmed/i.test(detail)
+              ? "Please confirm your email address first (check your inbox), then sign in."
+              : "That email or password isn't right.",
+            { auth: true }
+          );
+          throw err;
+        }
+        tokens.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+      });
+    });
+  }
+
+  function claimMember(email, code) {
+    return rpc("claim_member", { p_church_id: sb.churchId, p_email: email, p_code: code }).then(function (ok) {
+      if (ok !== true) throw ApiError("That code isn't right or has expired. Ask your leader for a new one.");
+    });
   }
 
   var supabaseApi = {
@@ -251,24 +367,48 @@
         }
       );
     },
-    admin: {
-      needsEmail: true,
-      status: function () {
-        return Promise.resolve(tokens.get() ? "signed-in" : "signed-out");
+    auth: {
+      emailOptional: false,
+      session: function () {
+        if (!tokens.get()) return Promise.resolve(null);
+        return resolveRole().catch(function (e) {
+          if (e.auth) return null;
+          throw e;
+        });
       },
       login: function (c) {
-        return fetch(SB_URL + "/auth/v1/token?grant_type=password", {
+        return passwordGrant(c.email, c.password).then(resolveRole);
+      },
+      activate: function (c) {
+        // Create the login, then connect it to the member record with the invite code.
+        return fetch(SB_URL + "/auth/v1/signup", {
           method: "POST",
           headers: { apikey: sb.anonKey, "Content-Type": "application/json" },
           body: JSON.stringify({ email: c.email, password: c.password }),
-        }).then(function (res) {
-          return readJson(res).then(function (data) {
-            if (!res.ok || !data || !data.access_token) {
-              throw ApiError("That email or password isn't right.", { auth: true });
-            }
-            tokens.set({ access_token: data.access_token, refresh_token: data.refresh_token });
-          });
-        });
+        })
+          .then(function (res) {
+            return readJson(res).then(function (data) {
+              if (!res.ok) throw ApiError(sbMessage(data, "We couldn't create your login. Please try again."));
+              if (data && data.access_token) tokens.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+            });
+          })
+          .then(function () {
+            if (tokens.get()) return;
+            return passwordGrant(c.email, c.password).catch(function (e) {
+              throw ApiError(
+                /confirm your email/i.test(e.message)
+                  ? "Your login was created. Confirm your email address (check your inbox), then sign in and enter your invite code."
+                  : "We couldn't sign you in. If you already have a login, use Sign in and enter your invite code there."
+              );
+            });
+          })
+          .then(function () {
+            return claimMember(c.email, c.code);
+          })
+          .then(resolveRole);
+      },
+      claim: function (c) {
+        return claimMember(c.email, c.code).then(resolveRole);
       },
       logout: function () {
         var s = tokens.get();
@@ -278,8 +418,10 @@
         return fetch(SB_URL + "/auth/v1/logout", {
           method: "POST",
           headers: { apikey: sb.anonKey, Authorization: "Bearer " + s.access_token },
-        }).catch(function () {});
+        }).then(noop, noop);
       },
+    },
+    admin: {
       list: function () {
         return sbRequest("/rest/v1/members?select=*&order=created_at.desc", { method: "GET" }, true).then(function (rows) {
           return (rows || []).map(fromRow);
@@ -310,7 +452,73 @@
         });
       },
       remove: function (id) {
-        return sbRequest("/rest/v1/members?id=eq." + encodeURIComponent(id), { method: "DELETE" }, true).then(function () {});
+        return sbRequest("/rest/v1/members?id=eq." + encodeURIComponent(id), { method: "DELETE" }, true).then(noop);
+      },
+      invite: function (id) {
+        return rpc("create_member_invite", { p_member_id: id }).then(function (code) {
+          return { code: code, expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() };
+        });
+      },
+      notices: {
+        list: function () {
+          return sbRequest("/rest/v1/notices?select=*&order=created_at.desc", { method: "GET" }, true).then(function (rows) {
+            return (rows || []).map(fromNotice);
+          });
+        },
+        create: function (n) {
+          return adminChurchId().then(function (churchId) {
+            var row = { church_id: churchId, title: n.title, body: n.body, is_published: n.published !== false };
+            return sbRequest(
+              "/rest/v1/notices",
+              { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) },
+              true
+            ).then(function (rows) {
+              return fromNotice(rows[0]);
+            });
+          });
+        },
+        update: function (id, n) {
+          var row = { title: n.title, body: n.body, is_published: n.published !== false, updated_at: new Date().toISOString() };
+          return sbRequest(
+            "/rest/v1/notices?id=eq." + encodeURIComponent(id),
+            { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) },
+            true
+          ).then(function (rows) {
+            if (!rows || !rows.length) throw ApiError("That notice no longer exists.");
+            return fromNotice(rows[0]);
+          });
+        },
+        remove: function (id) {
+          return sbRequest("/rest/v1/notices?id=eq." + encodeURIComponent(id), { method: "DELETE" }, true).then(noop);
+        },
+      },
+    },
+    member: {
+      me: function () {
+        return rpc("my_member").then(function (rows) {
+          var r = rows && rows[0];
+          if (!r) throw ApiError("Please sign in.", { auth: true });
+          return {
+            id: r.id,
+            fullName: r.full_name,
+            email: r.email || "",
+            phone: r.phone || "",
+            status: r.is_active ? "active" : "inactive",
+            joinedAt: r.joined_at || null,
+          };
+        });
+      },
+      update: function (p) {
+        return rpc("update_my_member", { p_full_name: p.fullName, p_phone: p.phone || null }).then(function () {
+          return supabaseApi.member.me();
+        });
+      },
+      notices: function () {
+        return rpc("my_notices").then(function (rows) {
+          return (rows || []).map(function (r) {
+            return { id: r.id, title: r.title, body: r.body, createdAt: r.created_at };
+          });
+        });
       },
     },
   };

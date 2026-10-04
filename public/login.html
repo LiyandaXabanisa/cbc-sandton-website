@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Login | Change Bible Church Sandton</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="admin.css">
+<link rel="icon" href="assets/emblem-navy.png">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/emblem-navy.png" alt="">
+      <span class="brand-text">
+        <span class="name">CHANGE BIBLE CHURCH</span><br>
+        <span class="place">Sandton</span>
+      </span>
+    </a>
+    <a class="btn btn-outline btn-sm" href="index.html">Back to site</a>
+  </div>
+</header>
+
+<main class="admin" id="main">
+
+  <section class="admin-card narrow" id="loading-view">
+    <p class="muted">Loading&hellip;</p>
+  </section>
+
+  <section class="admin-card narrow" id="notice-view" hidden>
+    <h1 id="notice-title"></h1>
+    <p id="notice-body" class="muted"></p>
+  </section>
+
+  <section class="admin-card narrow" id="signin-view" hidden>
+    <h1>Login</h1>
+    <p class="muted" id="signin-intro">Members and church leaders sign in here.</p>
+    <form id="signin-form" novalidate>
+      <div class="field">
+        <label for="si-email">Email</label>
+        <input id="si-email" type="email" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="si-password">Password</label>
+        <input id="si-password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-gold" type="submit" id="si-submit">Sign in</button>
+      <p class="form-status" id="si-error" role="alert"></p>
+    </form>
+    <p class="switch">First time here? <button class="link" type="button" id="to-activate">Activate your member login</button></p>
+  </section>
+
+  <section class="admin-card narrow" id="activate-view" hidden>
+    <h1>Activate your login</h1>
+    <p class="muted">Ask a church leader for your invite code. It works once and expires after 14 days.</p>
+    <form id="activate-form" novalidate>
+      <div class="field">
+        <label for="ac-email">Email the church has for you</label>
+        <input id="ac-email" type="email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="ac-code">Invite code</label>
+        <input id="ac-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" required>
+      </div>
+      <div class="field">
+        <label for="ac-password">Choose a password</label>
+        <input id="ac-password" type="password" autocomplete="new-password" minlength="8" required>
+        <p class="hint">At least 8 characters.</p>
+      </div>
+      <button class="btn btn-gold" type="submit" id="ac-submit">Activate</button>
+      <p class="form-status" id="ac-error" role="alert"></p>
+    </form>
+    <p class="switch">Already activated? <button class="link" type="button" id="to-signin">Sign in</button></p>
+  </section>
+
+  <section class="admin-card narrow" id="claim-view" hidden>
+    <h1>One more step</h1>
+    <p class="muted">You are signed in, but your login is not connected to a member record yet. Enter the invite code a church leader gave you.</p>
+    <form id="claim-form" novalidate>
+      <div class="field">
+        <label for="cl-email">Email the church has for you</label>
+        <input id="cl-email" type="email" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label for="cl-code">Invite code</label>
+        <input id="cl-code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" required>
+      </div>
+      <button class="btn btn-gold" type="submit" id="cl-submit">Connect</button>
+      <p class="form-status" id="cl-error" role="alert"></p>
+    </form>
+    <p class="switch"><button class="link" type="button" id="cl-signout">Sign out</button></p>
+  </section>
+
+</main>
+
+<script src="site.config.js"></script>
+<script src="api.js"></script>
+<script src="login.js"></script>
+</body>
+</html>
