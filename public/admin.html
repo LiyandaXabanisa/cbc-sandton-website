@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CBC Sandton Members</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="admin.css">
+<link rel="icon" href="assets/emblem-navy.png">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/emblem-navy.png" alt="">
+      <span class="brand-text">
+        <span class="name">CBC SANDTON</span><br>
+        <span class="place">Members area</span>
+      </span>
+    </a>
+    <div class="admin-nav">
+      <a class="btn btn-outline btn-sm" href="index.html">View site</a>
+      <button class="btn btn-outline btn-sm" id="signout" type="button" hidden>Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin" id="main">
+
+  <section class="admin-card" id="loading-view">
+    <p class="muted">Loading&hellip;</p>
+  </section>
+
+  <section class="admin-card narrow" id="notice-view" hidden>
+    <h1 id="notice-title"></h1>
+    <p id="notice-body" class="muted"></p>
+  </section>
+
+  <section class="admin-card narrow" id="login-view" hidden>
+    <h1>Sign in</h1>
+    <p class="muted" id="login-intro">For church leaders and admins only.</p>
+    <form id="login-form" novalidate>
+      <div class="field" id="login-email-field" hidden>
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-gold" type="submit" id="login-submit">Sign in</button>
+      <p class="form-status" id="login-error" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="app-view" hidden>
+    <div class="admin-head">
+      <div>
+        <h1>Members</h1>
+        <p class="muted" id="mode-note"></p>
+      </div>
+      <div class="admin-actions">
+        <button class="btn btn-gold" id="add-member" type="button">Add member</button>
+        <button class="btn btn-outline" id="export-csv" type="button">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="filters" role="group" aria-label="Filter members by status" id="filters"></div>
+
+    <div class="search">
+      <label class="sr-only" for="search">Search members</label>
+      <input id="search" type="search" placeholder="Search by name, email or phone" autocomplete="off">
+    </div>
+
+    <div class="table-wrap">
+      <table class="members" id="members-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Contact</th>
+            <th scope="col">Status</th>
+            <th scope="col">Registered</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="members-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="empty" hidden></p>
+  </section>
+
+  <dialog id="member-dialog" aria-labelledby="dialog-title">
+    <form id="member-form" novalidate>
+      <h2 id="dialog-title">Add member</h2>
+      <div class="field">
+        <label for="m-name">Full name</label>
+        <input id="m-name" type="text" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label for="m-email">Email</label>
+        <input id="m-email" type="email" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="m-phone">Phone</label>
+        <input id="m-phone" type="tel" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="m-notes">Notes</label>
+        <textarea id="m-notes" rows="3"></textarea>
+      </div>
+      <p class="form-status" id="member-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="member-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="member-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</main>
+
+<script src="site.config.js"></script>
+<script src="api.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

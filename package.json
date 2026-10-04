@@ -1,0 +1,17 @@
+{
+  "name": "cbc-sandton-website",
+  "version": "1.1.0",
+  "description": "Website for Change Bible Church Sandton: Sunday info, giving, member registration and a members area.",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
