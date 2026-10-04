@@ -167,3 +167,18 @@ button.link{
 .demo-box{margin-top:26px;padding-top:20px;border-top:1px solid var(--rule-light);}
 .demo-box .eyebrow{color:var(--gold-ink);margin:0 0 6px;}
 .demo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+
+/* ---------- CENTRED LAYOUT: login, member and leaders pages ---------- */
+.admin-nav{justify-content:center;flex-wrap:wrap;}
+.admin-card.narrow,.admin-card .field,.switch,.demo-box{text-align:center;}
+.admin-head{flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.admin-actions{justify-content:center;}
+.tabs{justify-content:center;}
+.filter{text-align:center;}
+.member-grid{grid-template-columns:1fr;max-width:640px;margin-left:auto;margin-right:auto;}
+.admin h2,.notices h2,.admin-card h2{text-align:center;}
+.notice-card{text-align:center;}
+.notice-head{flex-direction:column;align-items:center;gap:8px;}
+.demo-actions{justify-content:center;}
+.row-actions{justify-content:center;}
+.toast{text-align:center;}
