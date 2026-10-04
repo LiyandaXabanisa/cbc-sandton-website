@@ -4,9 +4,14 @@
 
   if ("serviceWorker" in navigator && secure) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function () {
-        /* the site works fine without it */
-      });
+      // wait until the browser is idle so the first screen is never slowed down
+      var go = function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {
+          /* the site works fine without it */
+        });
+      };
+      if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 4000 });
+      else setTimeout(go, 2000);
     });
   }
 
