@@ -129,7 +129,7 @@ Supabase settings worth checking (Authentication section):
 The domain and a Standard web hosting package are already in the church's xneelo account, and the domain's DNS already points at xneelo's Apache servers. Standard hosting serves static files, which is all this site needs, because the database lives on Supabase. `server.js` does not run on xneelo.
 
 1. In your xneelo control panel (konsoleH), open the hosting package for cbcsandton.co.za and find the FTP details: host name, username and password. Create a separate FTP user for this if the panel allows it.
-2. Install WinSCP or FileZilla and connect with **SFTP on port 22** (the server answers on cbcsandton.co.za). Do not use plain FTP, because it sends the password unencrypted.
+2. Install WinSCP or FileZilla and connect with **SFTP on port 22** to the hosting server `www524.jnb1.host-h.net`. Do not use plain FTP, because it sends the password unencrypted.
 3. Open the web root folder on the server (usually `public_html`). xneelo's placeholder page is a file called `index.html`, so uploading the site's own `index.html` replaces it. The domain currently serves that placeholder.
 4. Upload everything inside the project's `public/` folder, including the hidden `.htaccess` file. Turn on "show hidden files" in your FTP program so it is not skipped. Upload the contents, not the `public` folder itself.
 5. Open https://cbcsandton.co.za and check the pages, then follow the checklist below.
@@ -161,7 +161,7 @@ gh secret set XNEELO_FTP_USER
 gh secret set XNEELO_FTP_PASSWORD
 ```
 
-3. Only if your details differ from the defaults, also set `XNEELO_FTP_HOST` (default `cbcsandton.co.za`), `XNEELO_FTP_PORT` (default `22`) and `XNEELO_FTP_DIR` (default `public_html`).
+3. Only if your details differ from the defaults, also set `XNEELO_FTP_HOST` (default `www524.jnb1.host-h.net`, your hosting server), `XNEELO_FTP_PORT` (default `22`) and `XNEELO_FTP_DIR` (default `public_html`).
 4. Run the first upload: `gh workflow run xneelo.yml`, or use the Actions tab on GitHub.
 
 The server's identity is pinned in `.github/xneelo_known_hosts` (RSA key, fingerprint `SHA256:71NUwh2u39k2eIbqARasmpcP3xJPb7ky/x1HLVJUl9Q`), so the password can only be sent to the real server. Compare that fingerprint with the one in your xneelo panel if it shows one. If xneelo ever moves the site to a different server, replace that file.
