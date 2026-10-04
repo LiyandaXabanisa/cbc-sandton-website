@@ -5,6 +5,7 @@
 
 AddDefaultCharset UTF-8
 Options -Indexes
+ErrorDocument 404 /404.html
 
 # Always use the secure (https) address.
 # If the site ever shows "too many redirects", delete this block and ask xneelo support.

@@ -352,7 +352,7 @@
     mode: "supabase",
     modeLabel: "Connected to ChurchHub",
     register: function (p) {
-      if (p.hp_company) return Promise.resolve("Thank you! Your details have been received.");
+      if (p.hp_company) return Promise.resolve("Thank you. Your details have been received.");
       var body = {
         p_church_id: sb.churchId,
         p_full_name: (p.firstName + " " + p.lastName).trim(),
@@ -363,7 +363,7 @@
       };
       return sbRequest("/rest/v1/rpc/submit_website_registration", { method: "POST", body: JSON.stringify(body) }, false).then(
         function () {
-          return "Welcome, " + p.firstName + "! We've received your details and someone will be in touch.";
+          return "Welcome, " + p.firstName + ". We've received your details and someone will be in touch.";
         }
       );
     },

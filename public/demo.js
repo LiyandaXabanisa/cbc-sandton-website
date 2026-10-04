@@ -284,7 +284,7 @@
     },
 
     register: function (p) {
-      if (text(p.hp_company)) return Promise.resolve("Thank you! Your details have been received.");
+      if (text(p.hp_company)) return Promise.resolve("Thank you. Your details have been received.");
       var firstName = text(p.firstName), lastName = text(p.lastName), email = text(p.email), phone = text(p.phone), notes = text(p.notes);
       try {
         if (!firstName || firstName.length > 60) throw ApiError("Please enter your first name.");

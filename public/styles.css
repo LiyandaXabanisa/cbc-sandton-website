@@ -419,3 +419,34 @@ footer{
 
 /* ---------- ADDRESS ---------- */
 .visit-address{font-style:normal;line-height:1.75;color:var(--ink-muted);margin:0 0 22px;}
+
+/* ---------- REVIEW FIXES ---------- */
+/* Anchor links must not land underneath the sticky header. */
+section[id], #top{scroll-margin-top:72px;}
+
+/* Comfortable thumb targets and a physical press. */
+.btn{min-height:44px;}
+.btn:active{transform:translateY(1px) scale(0.98);}
+.footer-links a{display:inline-block;padding:12px 0;}
+.field.consent label a{padding:6px 0;display:inline-block;}
+
+p{text-wrap:pretty;}
+
+/* Opening times: never split a time across two lines. */
+.visit-times li{flex-wrap:wrap;gap:2px 16px;align-items:baseline;}
+.visit-times li b{white-space:nowrap;}
+
+@media (max-width:520px){
+  /* No stray dots when items wrap onto new lines. */
+  .dot-sep{display:none;}
+  .hero .meta-row{gap:8px 22px;}
+}
+@media (max-width:640px){
+  .values-row span + span::before{display:none;}
+  .values-row{gap:10px 0;}
+  .values-row span{padding:0 12px;}
+}
+
+@media (max-width:520px){
+  .visit-times li{flex-direction:column;align-items:flex-start;gap:2px;}
+}

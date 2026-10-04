@@ -99,7 +99,7 @@ app.post("/api/register", registerLimiter, (req, res) => {
 
   // Honeypot: real visitors never see or fill this field. Pretend success to bots.
   if (text(b.hp_company)) {
-    return res.status(201).json({ ok: true, message: "Thank you! Your details have been received." });
+    return res.status(201).json({ ok: true, message: "Thank you. Your details have been received." });
   }
 
   const firstName = text(b.firstName);
@@ -118,7 +118,7 @@ app.post("/api/register", registerLimiter, (req, res) => {
   if (b.consent !== true) errors.push("Please tick the box to let us store your details.");
   if (errors.length) return res.status(400).json({ ok: false, errors });
 
-  const message = `Welcome, ${firstName}! We've received your details and someone will be in touch.`;
+  const message = `Welcome, ${firstName}. We've received your details and someone will be in touch.`;
   const members = readMembers();
 
   // Already registered? Answer exactly the same, so the form can't be used
