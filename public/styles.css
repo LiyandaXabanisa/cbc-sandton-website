@@ -44,9 +44,7 @@
 }
 
 *{box-sizing:border-box;}
-html{scroll-behavior:smooth;}
 @media (prefers-reduced-motion: reduce){
-  html{scroll-behavior:auto;}
   *,*::before,*::after{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important;}
 }
 body{
@@ -158,17 +156,13 @@ nav.links a:hover::after{right:0;}
   .menu-toggle{display:flex;}
 }
 
-/* ---------- REVEAL ---------- */
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease, transform .7s ease;}
-.reveal.in{opacity:1;transform:translateY(0);}
-
 /* ---------- HERO ---------- */
 .hero{
   padding:76px 24px 84px;text-align:center;position:relative;
 }
 .hero-mark{
   width:104px;height:auto;margin:0 auto 28px;
-  animation:markIn 1s ease both;
+  animation:markIn .3s ease-out both;
 }
 @keyframes markIn{
   from{opacity:0;transform:translateY(-10px) scale(.92);}
@@ -204,10 +198,6 @@ section{padding:88px 0;}
 .section-head h2{font-size:clamp(2rem,4.4vw,2.9rem);}
 .panel-dark .section-head h2{color:var(--on-dark);}
 .panel-light .section-head h2{color:var(--ink);}
-
-.watermark{
-  position:absolute;top:-40px;right:-40px;width:340px;opacity:0.04;pointer-events:none;
-}
 
 /* ---------- THEME / SCRIPTURE ---------- */
 .theme-headline{

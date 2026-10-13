@@ -144,6 +144,7 @@ Service workers only run on https:// addresses and on localhost, so the xneelo s
 * **No third party requests.** The fonts live in `public/assets/fonts/` (Fraunces, Archivo and JetBrains Mono, all under the SIL Open Font License, see `LICENSES.txt` there). Phones never contact Google, which is faster and avoids sharing visitors' IP addresses.
 * **Vector logo.** `public/assets/emblem.svg` is 5 KB, stays sharp at any size, and replaced a 43 KB PNG. The PNG icons are only for phone home screens and sharing previews.
 * The three fonts the first screen needs are preloaded, images have fixed sizes so nothing jumps, and images below the first screen load only when needed.
+* **No scroll animations, on purpose.** Sections used to fade in as you scrolled, and a very faint logo sat behind the scripture section. Both made the browser redraw large areas and caused visible freezes and a slow feel, so content now appears at once and menu links jump instantly. If you add motion later, keep it to small elements and to `opacity` or `transform`, and test scrolling on a slow phone.
 * `public/.htaccess` compresses text files and lets phones keep fonts for a year (xneelo only).
 * If you change a font file or the logo, also raise `VERSION` in `public/sw.js` so phones fetch the new copy.
 
