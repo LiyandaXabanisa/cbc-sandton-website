@@ -984,6 +984,7 @@
     ministry_member: "Ministry Member",
   };
   var grants = [];
+  var ministryList = [];
   var auditRows = [];
   var showPast = false;
   var appNav = null;
@@ -1006,6 +1007,15 @@
     return iso ? "until " + new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "no end date";
   }
 
+  function ministryName(id) {
+    var m = ministryList.filter(function (x) { return x.id === id; })[0];
+    return m ? m.name : "a ministry";
+  }
+
+  function roleText(g) {
+    return (ROLE_LABEL[g.role] || g.role) + (g.scopeType === "ministry" ? ", " + ministryName(g.scopeId) : "");
+  }
+
   function renderRolesList() {
     var box = $("#roles-list");
     box.replaceChildren();
@@ -1025,7 +1035,7 @@
           "div",
           { class: "row" },
           h("span", { class: "av", text: window.CBC_APP.initials(g.name) }),
-          h("span", { class: "main" }, h("span", { class: "name", text: g.name }), h("span", { class: "sub", text: (ROLE_LABEL[g.role] || g.role) + "  |  " + untilText(g.expiresAt) })),
+          h("span", { class: "main" }, h("span", { class: "name", text: g.name }), h("span", { class: "sub", text: roleText(g) + "  |  " + untilText(g.expiresAt) })),
           right
         )
       );
@@ -1060,10 +1070,11 @@
   }
 
   function loadRoles() {
-    return Promise.all([API.roles.list(), API.roles.audit()])
+    return Promise.all([API.roles.list(), API.roles.audit(), API.ministries ? API.ministries.all() : Promise.resolve([])])
       .then(function (r) {
         grants = r[0];
         auditRows = r[1];
+        ministryList = r[2];
         renderRolesList();
         renderAudit();
       })
@@ -1071,7 +1082,7 @@
   }
 
   function removeRole(g) {
-    if (!window.confirm("Remove " + (ROLE_LABEL[g.role] || g.role) + " from " + g.name + "?")) return;
+    if (!window.confirm("Remove " + roleText(g) + " from " + g.name + "?")) return;
     API.roles.revoke(g.id).then(loadRoles).then(function () { toast("Role removed"); }).catch(handleError);
   }
 
@@ -1088,12 +1099,19 @@
     if (!people.length) sel.append(h("option", { value: "", text: "No one has a login yet" }));
     $("#rl-pastor-option").disabled = !isPastor;
     $("#rl-role").value = "platform_manager";
+    var msel = $("#rl-ministry");
+    msel.replaceChildren();
+    ministryList.forEach(function (m) { msel.append(h("option", { value: m.id, text: m.name })); });
+    $("#rl-ministry-wrap").hidden = true;
     $("#rl-until").value = "";
     $("#role-error").className = "form-status";
     roleDialog.showModal();
   }
 
   $("#add-role").addEventListener("click", openRoleDialog);
+  $("#rl-role").addEventListener("change", function () {
+    $("#rl-ministry-wrap").hidden = $("#rl-role").value.indexOf("ministry_") !== 0;
+  });
   $("#role-cancel").addEventListener("click", function () { roleDialog.close(); });
   $("#roles-past").addEventListener("click", function () {
     showPast = !showPast;
@@ -1118,11 +1136,13 @@
       expires = end.toISOString();
     }
     if (role === "senior_pastor" && !isPastor) return fail("Only the Senior Pastor can give that role.");
+    var ministryId = role.indexOf("ministry_") === 0 ? $("#rl-ministry").value : null;
+    if (role.indexOf("ministry_") === 0 && !ministryId) return fail("Choose the ministry.");
 
     var save = $("#role-save");
     save.disabled = true;
     API.roles
-      .grant(userId, role, expires)
+      .grant(userId, role, expires, ministryId)
       .then(loadRoles)
       .then(function () {
         roleDialog.close();
@@ -1164,12 +1184,17 @@
       return reloadMembers().then(function () {
         show("app");
         if (!API.program) $("#nav-program").hidden = true;
+        if (!API.worship) $("#nav-ministries").hidden = true;
         var nav = window.CBC_APP.views(function (name) {
           if (name === "content") selectTab(lastTab);
           if (name === "roles") loadRoles();
           if (name === "program" && window.CBC_PROGRAM) window.CBC_PROGRAM.showList();
+          if (name === "ministries" && window.CBC_MIN) window.CBC_MIN.showTiles();
         });
         appNav = nav;
+        if (API.worship && window.CBC_MIN) {
+          window.CBC_MIN.init({ API: API, nav: nav, $: $, toast: toast, handleError: handleError, toLogin: toLogin });
+        }
         if (API.program && window.CBC_PROGRAM) {
           window.CBC_PROGRAM.init({
             API: API, nav: nav, h: h, $: $, toast: toast, handleError: handleError, toLogin: toLogin,
