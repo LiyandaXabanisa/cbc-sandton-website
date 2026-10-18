@@ -574,6 +574,16 @@
 
   // ---------- sermons ----------
   var sermons = [];
+  var sermonQuery = "";
+  var isPastor = false;
+  var allowedExt = /\.(pdf|pptx?|docx?|png|jpe?g|webp)$/i;
+  var VISIBILITY_LABEL = { members: "members", managers_media: "media only", public: "public" };
+
+  if (API.roles) {
+    API.roles.mine().then(function (list) {
+      isPastor = list.indexOf("senior_pastor") !== -1;
+    });
+  }
 
   function formatDay(isoDate) {
     if (!isoDate) return "";
@@ -581,28 +591,45 @@
     return isNaN(d) ? "" : d.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
   }
 
+  function visibleSermons() {
+    var q = sermonQuery.trim().toLowerCase();
+    if (!q) return sermons;
+    return sermons.filter(function (s) {
+      return [s.title, s.speaker, s.scripture, s.series, s.topic, s.notes].some(function (v) {
+        return (v || "").toLowerCase().indexOf(q) !== -1;
+      });
+    });
+  }
+
   function renderSermons() {
     var box = $("#sermons-list");
     box.replaceChildren();
-    $("#sermons-empty").hidden = sermons.length > 0;
-    sermons.forEach(function (s) {
-      var details = [s.speaker && "Speaker: " + s.speaker, s.series && "Series: " + s.series, s.scripture].filter(Boolean).join("  |  ");
+    var list = visibleSermons();
+    $("#sermons-empty").hidden = list.length > 0;
+    $("#sermons-empty").textContent = sermons.length ? "No sermons match that search." : "No sermons yet. Use New sermon to add the first one.";
+    list.forEach(function (s) {
+      var details = [s.speaker && "Speaker: " + s.speaker, s.series && "Series: " + s.series, s.scripture, s.topic && "Topic: " + s.topic]
+        .filter(Boolean)
+        .join("  |  ");
+      var pills = h("span", { class: "pill-row" });
+      if (!s.published) pills.append(h("span", { class: "pill pending", text: "draft" }));
+      pills.append(h("span", { class: "pill " + (s.visibility === "members" ? "inactive" : "active"), text: VISIBILITY_LABEL[s.visibility] || s.visibility }));
       box.append(
         h(
           "article",
           { class: "notice-card" },
-          h("div", { class: "notice-head" }, h("h3", { text: s.title }), h("span", { class: "pill " + (s.published ? "active" : "inactive"), text: s.published ? "visible" : "hidden" })),
-          h("p", { class: "notice-date", text: formatDay(s.preachedOn) }),
+          h("div", { class: "notice-head" }, h("h3", { text: s.title }), pills),
+          h("p", { class: "notice-date", text: formatDay(s.preachedOn) + (s.videoUrl ? "  |  video linked" : "") }),
           details ? h("p", { class: "notice-body", text: details }) : null,
           h(
             "div",
             { class: "row-actions" },
             actionButton("Edit", "btn-outline", function () { openSermonDialog(s); }),
-            actionButton(s.published ? "Hide" : "Show", "btn-outline", function () {
+            actionButton(s.published ? "Make draft" : "Publish", "btn-outline", function () {
               admin.sermons.update(s.id, Object.assign({}, s, { published: !s.published })).then(reloadSermons).catch(handleError);
             }),
             actionButton("Delete", "btn-danger", function () {
-              if (!window.confirm("Delete “" + s.title + "”? This can't be undone.")) return;
+              if (!window.confirm("Delete “" + s.title + "” and its files? This can't be undone.")) return;
               admin.sermons.remove(s.id).then(reloadSermons).then(function () { toast("Sermon deleted"); }).catch(handleError);
             })
           )
@@ -618,27 +645,157 @@
     });
   }
 
+  $("#sermon-search").addEventListener("input", function (e) {
+    sermonQuery = e.target.value;
+    renderSermons();
+  });
+
   var sermonDialog = $("#sermon-dialog");
   var editingSermon = null;
+  var pendingFiles = [];
+  var currentFiles = [];
+  var servicesCache = null;
+
+  function fileSize(n) {
+    return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+  }
+
+  function renderFileList() {
+    var ul = $("#v-file-list");
+    ul.replaceChildren();
+    currentFiles.forEach(function (f) {
+      ul.append(
+        h(
+          "li",
+          null,
+          h("span", { class: "fname", text: f.name + "  (" + fileSize(f.size) + ")" }),
+          actionButton("Remove", "btn-danger", function () {
+            admin.sermons
+              .removeFile(f)
+              .then(function () {
+                currentFiles = currentFiles.filter(function (x) { return x.id !== f.id; });
+                renderFileList();
+              })
+              .catch(handleError);
+          })
+        )
+      );
+    });
+    pendingFiles.forEach(function (f, i) {
+      ul.append(
+        h(
+          "li",
+          null,
+          h("span", { class: "fname", text: f.name + "  (" + fileSize(f.size) + ", uploads when you save)" }),
+          actionButton("Remove", "btn-outline", function () {
+            pendingFiles.splice(i, 1);
+            renderFileList();
+          })
+        )
+      );
+    });
+  }
+
+  function loadServiceOptions(selectedId) {
+    var sel = $("#v-service");
+    var fill = function (list) {
+      sel.replaceChildren(h("option", { value: "", text: "Not linked to a service" }));
+      list.forEach(function (sv) {
+        sel.append(h("option", { value: sv.id, text: formatWhen(sv.startsAt) + "  " + sv.title }));
+      });
+      sel.value = selectedId || "";
+    };
+    if (!admin.services) return fill([]);
+    var load = servicesCache ? Promise.resolve(servicesCache) : admin.services.list().then(function (l) { servicesCache = l; return l; });
+    load.then(function (l) {
+      var cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
+      fill(l.filter(function (sv) { return new Date(sv.startsAt).getTime() >= cutoff || sv.id === selectedId; }).reverse());
+    }, function () { fill([]); });
+  }
+
+  function paintPreview() {
+    $("#v-preview").replaceChildren(window.CBC_RT.render($("#v-notes").value));
+  }
 
   function openSermonDialog(s) {
     editingSermon = s || null;
+    pendingFiles = [];
+    currentFiles = [];
     $("#sermon-dialog-title").textContent = s ? "Edit sermon" : "New sermon";
     $("#v-title").value = s ? s.title : "";
     $("#v-url").value = s ? s.videoUrl : "";
-    $("#v-date").value = s ? s.preachedOn : "";
+    $("#v-date").value = s ? s.preachedOn : new Date().toISOString().slice(0, 10);
     $("#v-speaker").value = s ? s.speaker : "";
     $("#v-scripture").value = s ? s.scripture : "";
     $("#v-series").value = s ? s.series : "";
-    $("#v-desc").value = s ? s.description : "";
+    $("#v-topic").value = s ? s.topic : "";
+    $("#v-notes").value = s ? s.notes : "";
+    $("#v-visibility").value = s ? s.visibility : "members";
+    $("#v-public-option").disabled = !isPastor && !(s && s.visibility === "public");
     $("#v-published").checked = s ? s.published : true;
+    $("#v-files").value = "";
     $("#sermon-error").className = "form-status";
+    loadServiceOptions(s ? s.serviceId : null);
+    paintPreview();
+    renderFileList();
+    if (s) admin.sermons.files(s.id).then(function (f) { currentFiles = f; renderFileList(); }, handleError);
     sermonDialog.showModal();
     $("#v-title").focus();
   }
 
   $("#add-sermon").addEventListener("click", function () { openSermonDialog(null); });
   $("#sermon-cancel").addEventListener("click", function () { sermonDialog.close(); });
+  $("#v-notes").addEventListener("input", paintPreview);
+
+  // formatting buttons put the simple marks around the selected text
+  Array.prototype.forEach.call(document.querySelectorAll("[data-mark]"), function (btn) {
+    btn.addEventListener("click", function () {
+      var ta = $("#v-notes");
+      var a = ta.selectionStart, b = ta.selectionEnd, v = ta.value;
+      var sel = v.slice(a, b);
+      var kind = btn.getAttribute("data-mark");
+      var out;
+      if (kind === "bold") out = "**" + (sel || "bold text") + "**";
+      else if (kind === "italic") out = "*" + (sel || "italic text") + "*";
+      else if (kind === "heading") out = (a === 0 || v[a - 1] === "\n" ? "" : "\n") + "## " + (sel || "Heading");
+      else if (kind === "bullet") out = (a === 0 || v[a - 1] === "\n" ? "" : "\n") + (sel || "item").split("\n").map(function (l) { return "- " + l; }).join("\n");
+      else {
+        var url = window.prompt("Paste the link (it must start with https://)", "https://");
+        if (!url || !/^https:\/\//i.test(url.trim())) return toast("A link must start with https://", true);
+        out = "[" + (sel || "link text") + "](" + url.trim() + ")";
+      }
+      ta.value = v.slice(0, a) + out + v.slice(b);
+      ta.focus();
+      ta.selectionStart = a;
+      ta.selectionEnd = a + out.length;
+      paintPreview();
+    });
+  });
+
+  $("#v-files").addEventListener("change", function (e) {
+    var chosen = Array.prototype.slice.call(e.target.files);
+    e.target.value = "";
+    var bad = chosen.filter(function (f) { return !allowedExt.test(f.name); });
+    if (bad.length) dialogError("#sermon-error", "Only PowerPoint, Word, PDF and picture files can be attached: " + bad.map(function (f) { return f.name; }).join(", "));
+    chosen = chosen.filter(function (f) { return allowedExt.test(f.name); });
+    if (!editingSermon) {
+      pendingFiles = pendingFiles.concat(chosen);
+      return renderFileList();
+    }
+    var save = $("#sermon-save");
+    save.disabled = true;
+    chosen
+      .reduce(function (chain, f) {
+        return chain.then(function () {
+          return admin.sermons.upload(editingSermon.id, f).then(function (rec) {
+            currentFiles.push(rec);
+            renderFileList();
+          });
+        });
+      }, Promise.resolve())
+      .catch(function (err) { dialogError("#sermon-error", (err && err.message) || "A file couldn't be uploaded."); })
+      .then(function () { save.disabled = false; });
+  });
 
   $("#sermon-form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -649,27 +806,40 @@
       speaker: $("#v-speaker").value.trim(),
       scripture: $("#v-scripture").value.trim(),
       series: $("#v-series").value.trim(),
-      description: $("#v-desc").value.trim(),
+      topic: $("#v-topic").value.trim(),
+      notes: $("#v-notes").value.trim(),
+      visibility: $("#v-visibility").value,
+      serviceId: $("#v-service").value || null,
+      description: editingSermon ? editingSermon.description : "",
       published: $("#v-published").checked,
     };
     var fail = function (m) { dialogError("#sermon-error", m); };
     if (!data.title) return fail("Give the sermon a title.");
-    if (!data.videoUrl) return fail("Paste the YouTube link for this sermon.");
-    if (!/^https:\/\//i.test(data.videoUrl)) return fail("The video link must start with https://");
-    var yt = window.CBC_YT;
-    if (yt && yt.isYouTubeHost(data.videoUrl) && !yt.id(data.videoUrl)) {
-      return fail("That YouTube link isn't recognised. Open the video on YouTube, press Share, and paste that link.");
-    }
     if (!data.preachedOn) return fail("Choose the date it was preached.");
+    if (data.videoUrl) {
+      if (!/^https:\/\//i.test(data.videoUrl)) return fail("The video link must start with https://");
+      var yt = window.CBC_YT;
+      if (yt && yt.isYouTubeHost(data.videoUrl) && !yt.id(data.videoUrl)) {
+        return fail("That YouTube link isn't recognised. Open the video on YouTube, press Share, and paste that link.");
+      }
+    }
+    if (data.visibility === "public" && !isPastor && !(editingSermon && editingSermon.visibility === "public")) {
+      return fail("Only the Senior Pastor can make a sermon public.");
+    }
 
     var save = $("#sermon-save");
     save.disabled = true;
     var job = editingSermon ? admin.sermons.update(editingSermon.id, data) : admin.sermons.create(data);
     job
+      .then(function (saved) {
+        return pendingFiles.reduce(function (chain, f) {
+          return chain.then(function () { return admin.sermons.upload(saved.id, f); });
+        }, Promise.resolve());
+      })
       .then(reloadSermons)
       .then(function () {
         sermonDialog.close();
-        toast(editingSermon ? "Sermon updated" : "Sermon added");
+        toast(editingSermon ? "Sermon updated" : "Sermon saved");
       })
       .catch(function (err) {
         if (err && err.auth) return toLogin();
@@ -677,7 +847,6 @@
       })
       .then(function () { save.disabled = false; });
   });
-
   // ---------- reminders ----------
   var reminders = [];
   var PRIORITY_LABEL = { urgent: "Urgent", important: "Important", normal: "Normal" };
@@ -839,6 +1008,7 @@
         });
         $("#avatar").addEventListener("click", function () { nav.show("settings"); });
         nav.start("members");
+        window.CBC_APP.bell(API);
       });
     })
     .catch(function (err) {

@@ -333,8 +333,15 @@
       speaker: r.speaker || "",
       scripture: r.scripture || "",
       series: r.series || "",
+      topic: r.topic || "",
+      notes: r.notes || "",
       description: r.description || "",
       videoUrl: r.video_url || "",
+      visibility: r.visibility || "members",
+      serviceId: r.service_id || null,
+      serviceTitle: r.service_title || "",
+      serviceStartsAt: r.service_starts_at || null,
+      fileCount: r.file_count || 0,
       published: r.is_published !== false,
     };
   }
@@ -346,8 +353,12 @@
       speaker: s.speaker || null,
       scripture: s.scripture || null,
       series: s.series || null,
+      topic: s.topic || null,
+      notes: s.notes || null,
       description: s.description || null,
-      video_url: s.videoUrl,
+      video_url: s.videoUrl || null,
+      visibility: s.visibility || "members",
+      service_id: s.serviceId || null,
       is_published: s.published !== false,
     };
   }
@@ -417,9 +428,9 @@
   function adminChurchId() {
     // Use the church the signed-in user actually belongs to, not the public config value.
     if (!churchIdPromise) {
-      churchIdPromise = sbRequest("/rest/v1/profiles?select=church_id&limit=1", { method: "GET" }, true).then(function (rows) {
-        if (!rows || !rows.length) throw ApiError("This login isn't linked to a church in ChurchHub.");
-        return rows[0].church_id;
+      churchIdPromise = rpc("my_church_id").then(function (id) {
+        if (!id) throw ApiError("This login isn't linked to a church in ChurchHub.");
+        return id;
       });
       churchIdPromise.catch(function () {
         churchIdPromise = null;
@@ -432,8 +443,17 @@
   function resolveRole() {
     return sbRequest("/rest/v1/profiles?select=church_id&limit=1", { method: "GET" }, true).then(function (rows) {
       if (rows && rows.length) return { role: "admin" };
-      return rpc("my_member").then(function (mine) {
-        return { role: mine && mine.length ? "member" : "unlinked" };
+      // Platform Managers and the Senior Pastor may not have a ChurchHub profile, only a role.
+      return rpc("my_roles").then(
+        function (roles) {
+          return (roles || []).some(function (r) { return r.role === "platform_manager" || r.role === "senior_pastor"; });
+        },
+        function () { return false; }
+      ).then(function (isManager) {
+        if (isManager) return { role: "admin" };
+        return rpc("my_member").then(function (mine) {
+          return { role: mine && mine.length ? "member" : "unlinked" };
+        });
       });
     });
   }
@@ -546,7 +566,29 @@
         }
       );
     },
-    auth: {
+    roles: {
+      mine: function () {
+        return rpc("my_roles").then(
+          function (rows) { return (rows || []).map(function (r) { return r.role; }); },
+          function () { return []; }
+        );
+      },
+    },
+    notifications: {
+      list: function () {
+        return rpc("my_notifications").then(
+          function (rows) {
+            return (rows || []).map(function (r) {
+              return { id: r.id, kind: r.kind, title: r.title, body: r.body || "", link: r.link || "", createdAt: r.created_at, read: !!r.read_at };
+            });
+          },
+          function () { return []; }
+        );
+      },
+      markRead: function () {
+        return rpc("mark_notifications_read", { p_ids: null }).then(noop, noop);
+      },
+    },    auth: {
       emailOptional: false,
       providers: (sb.providers || []).filter(function (p) {
         return p === "google" || p === "apple";
@@ -689,6 +731,39 @@
       })(),
       sermons: (function () {
         var c = crud("sermons", fromSermon, toSermonRow);
+
+        function safeName(name) {
+          return String(name || "file").replace(/[^A-Za-z0-9._-]+/g, "_").slice(-120) || "file";
+        }
+        function newId() {
+          if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+          return String(Date.now()) + Math.random().toString(16).slice(2);
+        }
+        function objectUrl(path) {
+          return SB_URL + "/storage/v1/object/sermon-files/" + path.split("/").map(encodeURIComponent).join("/");
+        }
+        // Raw storage calls: same sign in, with one retry if the session just expired.
+        function storage(method, url, extra, canRetry) {
+          var s = tokens.get();
+          if (!s) return Promise.reject(ApiError("Please sign in.", { auth: true }));
+          var headers = Object.assign({ apikey: sb.anonKey, Authorization: "Bearer " + s.access_token }, extra.headers || {});
+          return fetch(url, { method: method, headers: headers, body: extra.body }).then(function (res) {
+            if (res.status === 401 && canRetry !== false) {
+              return sbRefresh().then(function (ok) {
+                if (!ok) {
+                  tokens.clear();
+                  throw ApiError("Your session has expired. Please sign in again.", { auth: true });
+                }
+                return storage(method, url, extra, false);
+              });
+            }
+            if (res.ok) return res;
+            return readJson(res).then(function (d) {
+              throw ApiError(sbMessage(d, "The file couldn't be saved. Please try again."));
+            });
+          });
+        }
+
         return {
           list: function () {
             return c.list("preached_on.desc");
@@ -696,6 +771,47 @@
           create: c.create,
           update: c.update,
           remove: c.remove,
+          files: function (sermonId) {
+            return sbRequest(
+              "/rest/v1/sermon_files?sermon_id=eq." + encodeURIComponent(sermonId) + "&select=*&order=created_at",
+              { method: "GET" },
+              true
+            ).then(function (rows) {
+              return (rows || []).map(function (r) {
+                return { id: r.id, name: r.file_name, type: r.content_type || "", size: r.size_bytes || 0, path: r.storage_path };
+              });
+            });
+          },
+          upload: function (sermonId, file) {
+            if (file.size > 25 * 1024 * 1024) return Promise.reject(ApiError("That file is over 25 MB. Please choose a smaller one."));
+            return adminChurchId().then(function (churchId) {
+              var path = churchId + "/" + newId() + "/" + safeName(file.name);
+              return storage("POST", objectUrl(path), {
+                headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "false" },
+                body: file,
+              }).then(function () {
+                var row = {
+                  church_id: churchId,
+                  sermon_id: sermonId,
+                  file_name: String(file.name).slice(0, 200),
+                  content_type: file.type || null,
+                  size_bytes: Math.max(1, file.size),
+                  storage_path: path,
+                };
+                return sbRequest("/rest/v1/sermon_files", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) }, true).then(
+                  function (rows) {
+                    var r = rows[0];
+                    return { id: r.id, name: r.file_name, type: r.content_type || "", size: r.size_bytes || 0, path: r.storage_path };
+                  }
+                );
+              });
+            });
+          },
+          removeFile: function (f) {
+            return storage("DELETE", objectUrl(f.path), {}).then(function () {
+              return sbRequest("/rest/v1/sermon_files?id=eq." + encodeURIComponent(f.id), { method: "DELETE" }, true).then(noop);
+            });
+          },
         };
       })(),
       reminders: (function () {
@@ -718,11 +834,35 @@
           });
         });
       },
-      sermons: function () {
-        return rpc("my_sermons").then(function (rows) {
+      sermons: function (opts) {
+        opts = opts || {};
+        return rpc("search_sermons", { p_query: opts.query || null, p_series: opts.series || null, p_from: opts.from || null, p_to: opts.to || null }).then(
+          function (rows) {
+            return (rows || []).map(fromSermon);
+          }
+        );
+      },
+      sermonSeries: function () {
+        return rpc("sermon_series").then(function (rows) {
+          return (rows || []).map(function (r) { return r.series; });
+        });
+      },
+      sermonFiles: function (sermonId) {
+        return rpc("sermon_files_for", { p_sermon: sermonId }).then(function (rows) {
           return (rows || []).map(function (r) {
-            return fromSermon(Object.assign({ is_published: true }, r));
+            return { id: r.id, name: r.file_name, type: r.content_type || "", size: r.size_bytes || 0, path: r.storage_path };
           });
+        });
+      },
+      // A link that works for five minutes, issued only if the database lets this person read the file.
+      fileLink: function (path) {
+        return sbRequest(
+          "/storage/v1/object/sign/sermon-files/" + path.split("/").map(encodeURIComponent).join("/"),
+          { method: "POST", body: JSON.stringify({ expiresIn: 300 }) },
+          true
+        ).then(function (d) {
+          if (!d || !d.signedURL) throw ApiError("You don't have access to that file.");
+          return SB_URL + "/storage/v1" + d.signedURL;
         });
       },
       reminders: function () {

@@ -179,29 +179,148 @@
     return null;
   }
 
+  var sermonState = { query: "", series: "" };
+  var searchTimer;
+
+  function fileSize(n) {
+    return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+  }
+
+  function toggleSection(card, key, button, build) {
+    var existing = card.querySelector('[data-section="' + key + '"]');
+    if (existing) {
+      existing.remove();
+      button.setAttribute("aria-expanded", "false");
+      return;
+    }
+    var box = el("div", "sermon-extra");
+    box.setAttribute("data-section", key);
+    card.append(box);
+    button.setAttribute("aria-expanded", "true");
+    build(box);
+  }
+
   function renderSermons(list) {
     var box = $("#sermon-list");
     box.replaceChildren();
     $("#sermon-empty").hidden = list.length > 0;
+    $("#sermon-empty").textContent =
+      sermonState.query || sermonState.series ? "No sermons match that search." : "No sermons yet. New recordings will appear here.";
     list.forEach(function (s) {
-      var card = el("article", "service-card");
-      card.append(el("h3", null, s.title));
+      var card = el("article", "service-card sermon-card");
+      var head = el("div", "sermon-head");
+      head.append(el("h3", null, s.title));
+      if (!s.published) head.append(el("span", "priority-badge", "Draft"));
+      else if (s.visibility === "managers_media") head.append(el("span", "priority-badge", "Media team"));
+      card.append(head);
       var day = s.preachedOn ? new Date(s.preachedOn + "T12:00:00") : null;
       card.append(
         el("p", "service-when", day && !isNaN(day) ? day.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "")
       );
-      [["Series", s.series], ["Speaker", s.speaker], ["Scripture", s.scripture]].forEach(function (row) {
+      [["Series", s.series], ["Speaker", s.speaker], ["Scripture", s.scripture], ["Topic", s.topic]].forEach(function (row) {
         if (!row[1]) return;
         var p = el("p", "service-line");
         p.append(el("span", "service-key", row[0]), " " + row[1]);
         card.append(p);
       });
-      var watch = videoBlock(s, "Watch the sermon");
-      if (watch) card.append(watch);
+      if (s.serviceTitle && s.serviceStartsAt) {
+        card.append(el("p", "service-line", "For the service on " + when(s.serviceStartsAt, true)));
+      }
+
+      var actions = el("div", "sermon-actions");
+      var watch = s.videoUrl ? videoBlock(s, "Watch the sermon") : null;
+      if (watch) actions.append(watch);
+
+      if (s.notes) {
+        var notesBtn = el("button", "btn btn-outline btn-sm", "Notes");
+        notesBtn.type = "button";
+        notesBtn.setAttribute("aria-expanded", "false");
+        notesBtn.addEventListener("click", function () {
+          toggleSection(card, "notes", notesBtn, function (b) { b.append(window.CBC_RT.render(s.notes)); });
+        });
+        actions.append(notesBtn);
+      }
+      if (s.fileCount > 0) {
+        var filesBtn = el("button", "btn btn-outline btn-sm", "Files (" + s.fileCount + ")");
+        filesBtn.type = "button";
+        filesBtn.setAttribute("aria-expanded", "false");
+        filesBtn.addEventListener("click", function () {
+          toggleSection(card, "files", filesBtn, function (b) {
+            b.append(el("p", "empty", "Loading files…"));
+            API.member.sermonFiles(s.id).then(
+              function (files) {
+                b.replaceChildren();
+                if (!files.length) b.append(el("p", "empty", "No files."));
+                files.forEach(function (f) {
+                  var row = el("div", "file-row");
+                  row.append(el("span", "fname", f.name + "  (" + fileSize(f.size) + ")"));
+                  var dl = el("button", "btn btn-gold btn-sm", "Download");
+                  dl.type = "button";
+                  dl.addEventListener("click", function () {
+                    dl.disabled = true;
+                    // The link is made now, works for five minutes, and only if the database allows this person to read the file.
+                    API.member.fileLink(f.path).then(
+                      function (url) {
+                        window.open(url, "_blank", "noopener");
+                        dl.disabled = false;
+                      },
+                      function (err) {
+                        dl.disabled = false;
+                        alertSermonError((err && err.message) || "That file isn't available.");
+                      }
+                    );
+                  });
+                  row.append(dl);
+                  b.append(row);
+                });
+              },
+              function () { b.replaceChildren(el("p", "empty", "The files couldn't be loaded.")); }
+            );
+          });
+        });
+        actions.append(filesBtn);
+      }
+      if (actions.children.length) card.append(actions);
       box.append(card);
     });
   }
 
+  function alertSermonError(message) {
+    var box = $("#sermon-list");
+    var note = el("p", "empty", message);
+    box.prepend(note);
+    setTimeout(function () { note.remove(); }, 4000);
+  }
+
+  function loadSermons() {
+    return API.member.sermons({ query: sermonState.query, series: sermonState.series }).then(renderSermons, function () {});
+  }
+
+  function renderSeriesChips(series) {
+    var box = $("#series-chips");
+    box.replaceChildren();
+    box.hidden = series.length === 0;
+    ["All"].concat(series).forEach(function (name) {
+      var value = name === "All" ? "" : name;
+      var chip = el("button", "chip", name);
+      chip.type = "button";
+      chip.setAttribute("aria-pressed", String(sermonState.series === value));
+      chip.addEventListener("click", function () {
+        sermonState.series = value;
+        renderSeriesChips(series);
+        loadSermons();
+      });
+      box.append(chip);
+    });
+  }
+
+  $("#sermon-search").addEventListener("input", function (e) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () {
+      sermonState.query = e.target.value;
+      loadSermons();
+    }, 250);
+  });
   function renderReminders(list) {
     $("#reminders-section").hidden = false;
     var box = $("#reminder-list");
@@ -226,7 +345,8 @@
       API.member.services().then(renderServices, function () {});
     }
     if (API.member.sermons) {
-      API.member.sermons().then(renderSermons, function () {});
+      loadSermons();
+      if (API.member.sermonSeries) API.member.sermonSeries().then(renderSeriesChips, function () {});
     }
     if (API.member.reminders) {
       API.member.reminders().then(function (list) {
@@ -309,6 +429,7 @@
         var nav = window.CBC_APP.views();
         $("#avatar").addEventListener("click", function () { nav.show("profile"); });
         nav.start("home");
+        window.CBC_APP.bell(API);
         loadDashboard();
       });
     })
