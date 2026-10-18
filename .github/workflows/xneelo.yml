@@ -80,6 +80,8 @@ jobs:
             set net:timeout 30;
             set sftp:auto-confirm no;
             set sftp:connect-program $WRAP;
+            pwd;
+            ls;
             mirror -R --verbose --parallel=2 public/ \"$DIR\";
             bye"
 
