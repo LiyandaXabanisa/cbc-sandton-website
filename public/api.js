@@ -425,6 +425,13 @@
     };
   }
 
+  function adminChurchOrMine() {
+    return rpc("my_church_id").then(function (id) {
+      if (!id) throw ApiError("This login isn't linked to a church.");
+      return id;
+    });
+  }
+
   var churchIdPromise = null;
   function adminChurchId() {
     // Use the church the signed-in user actually belongs to, not the public config value.
@@ -567,7 +574,164 @@
         }
       );
     },
-    roles: {
+    program: (function () {
+      // Raw storage calls for the program-files bucket: same sign in, with one retry if the session just expired.
+      function objectUrl(path) {
+        return SB_URL + "/storage/v1/object/program-files/" + path.split("/").map(encodeURIComponent).join("/");
+      }
+      function storage(method, url, extra, canRetry) {
+        var s = tokens.get();
+        if (!s) return Promise.reject(ApiError("Please sign in.", { auth: true }));
+        var headers = Object.assign({ apikey: sb.anonKey, Authorization: "Bearer " + s.access_token }, extra.headers || {});
+        return fetch(url, { method: method, headers: headers, body: extra.body }).then(function (res) {
+          if (res.status === 401 && canRetry !== false) {
+            return sbRefresh().then(function (ok) {
+              if (!ok) {
+                tokens.clear();
+                throw ApiError("Your session has expired. Please sign in again.", { auth: true });
+              }
+              return storage(method, url, extra, false);
+            });
+          }
+          if (res.ok) return res;
+          return readJson(res).then(function (d) {
+            throw ApiError(sbMessage(d, "The file couldn't be saved. Please try again."));
+          });
+        });
+      }
+      function safeName(name) {
+        return String(name || "file").replace(/[^A-Za-z0-9._-]+/g, "_").slice(-120) || "file";
+      }
+      function newId() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return String(Date.now()) + Math.random().toString(16).slice(2);
+      }
+      function mapProgram(r) {
+        if (!r) return null;
+        return {
+          id: r.id,
+          title: r.title,
+          startsAt: r.starts_at,
+          status: r.status,
+          version: r.version,
+          items: (r.items || []).map(function (i) {
+            return {
+              id: i.id,
+              position: i.position,
+              title: i.title,
+              minutes: i.duration_minutes,
+              department: i.department || "",
+              presenterId: i.presenter_id || null,
+              presenterName: i.presenter_name || "",
+              notes: i.notes == null ? null : i.notes,
+              fileCount: i.file_count || 0,
+            };
+          }),
+        };
+      }
+      function toItems(list) {
+        return (list || []).map(function (i) {
+          return {
+            id: i.id || null,
+            title: i.title,
+            duration_minutes: Number(i.minutes) || 5,
+            department: i.department || null,
+            presenter_id: i.presenterId || null,
+            presenter_name: i.presenterId ? null : i.presenterName || null,
+            notes: i.notes || null,
+          };
+        });
+      }
+      function mapFile(r) {
+        return { id: r.id, name: r.file_name, type: r.content_type || "", size: r.size_bytes || 0, path: r.storage_path, mine: !!r.uploaded_by_me };
+      }
+      return {
+        list: function () {
+          return rpc("list_programs").then(function (rows) {
+            return (rows || []).map(function (r) {
+              return { id: r.id, title: r.title, startsAt: r.starts_at, status: r.status, version: r.version, itemCount: r.item_count };
+            });
+          });
+        },
+        get: function (id) {
+          return rpc("get_program", { p_program: id }).then(mapProgram);
+        },
+        create: function (o) {
+          return rpc("create_program", { p_title: o.title, p_starts_at: o.startsAt, p_service: o.serviceId || null, p_copy_from: o.copyFrom || null });
+        },
+        save: function (id, o) {
+          return rpc("save_program", { p_program: id, p_title: o.title || null, p_starts_at: o.startsAt || null, p_items: toItems(o.items), p_summary: o.summary || null });
+        },
+        publish: function (id, flag) {
+          return rpc("publish_program", { p_program: id, p_publish: !!flag }).then(noop);
+        },
+        remove: function (id) {
+          return rpc("delete_program", { p_program: id }).then(noop);
+        },
+        history: function (id) {
+          return rpc("program_history", { p_program: id }).then(function (rows) {
+            return (rows || []).map(function (r) {
+              return { id: r.id, version: r.version, at: r.changed_at, by: r.changed_by_name, summary: r.summary || "", snapshot: r.snapshot };
+            });
+          });
+        },
+        restore: function (versionId) {
+          return rpc("restore_program_version", { p_version: versionId });
+        },
+        myItems: function () {
+          return rpc("my_items").then(function (rows) {
+            return (rows || []).map(function (r) {
+              return {
+                itemId: r.item_id,
+                programId: r.program_id,
+                programTitle: r.program_title,
+                startsAt: r.starts_at,
+                title: r.item_title,
+                minutes: r.duration_minutes,
+                department: r.department || "",
+                notes: r.notes || "",
+                canUpload: !!r.can_upload,
+                expiresAt: r.expires_at || null,
+              };
+            });
+          });
+        },
+        files: function (itemId) {
+          return rpc("item_files_for", { p_item: itemId }).then(function (rows) {
+            return (rows || []).map(mapFile);
+          });
+        },
+        upload: function (itemId, file) {
+          if (file.size > 25 * 1024 * 1024) return Promise.reject(ApiError("That file is over 25 MB. Please choose a smaller one."));
+          return adminChurchOrMine().then(function (churchId) {
+            var path = churchId + "/" + itemId + "/" + newId() + "/" + safeName(file.name);
+            return storage("POST", objectUrl(path), { headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "false" }, body: file }).then(function () {
+              var row = { church_id: churchId, item_id: itemId, file_name: String(file.name).slice(0, 200), content_type: file.type || null, size_bytes: Math.max(1, file.size), storage_path: path };
+              return sbRequest("/rest/v1/program_item_files", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) }, true).then(
+                function (rows) {
+                  return mapFile(Object.assign({ uploaded_by_me: true }, rows[0]));
+                }
+              );
+            });
+          });
+        },
+        removeFile: function (f) {
+          return storage("DELETE", objectUrl(f.path), {}).then(function () {
+            return sbRequest("/rest/v1/program_item_files?id=eq." + encodeURIComponent(f.id), { method: "DELETE" }, true).then(noop);
+          });
+        },
+        fileLink: function (path) {
+          return sbRequest(
+            "/storage/v1/object/sign/program-files/" + path.split("/").map(encodeURIComponent).join("/"),
+            { method: "POST", body: JSON.stringify({ expiresIn: 300 }) },
+            true
+          ).then(function (d) {
+            if (!d || !d.signedURL) throw ApiError("You don't have access to that file.");
+            return SB_URL + "/storage/v1" + d.signedURL;
+          });
+        },
+      };
+    })(),    roles: {
       mine: function () {
         return rpc("my_roles").then(
           function (rows) { return (rows || []).map(function (r) { return r.role; }); },
