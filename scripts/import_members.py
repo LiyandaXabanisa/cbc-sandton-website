@@ -194,7 +194,7 @@ def write_files(members, out_dir, church_id, keep_address):
     with open(sql_path, "w", encoding="utf-8") as f:
         f.write(
             "-- Imports the existing church members into ChurchHub.\n"
-            "-- Run this ONCE in the Supabase SQL editor, AFTER supabase/website-integration.sql.\n"
+            "-- Run this ONCE in the Supabase SQL editor, AFTER supabase/02-website-integration.sql.\n"
             "-- 1. Replace PASTE-CHURCH-ID-HERE with your church id (Table editor > churches > id).\n"
             "-- 2. Run it. Running it again will not add anyone twice (matched on email).\n"
             "-- Everyone is added as an ACTIVE member with source 'import'.\n"

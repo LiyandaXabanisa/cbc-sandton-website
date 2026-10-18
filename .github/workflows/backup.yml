@@ -1,0 +1,75 @@
+name: Weekly member backup
+
+# Once a week this downloads the church data from Supabase, encrypts it, and keeps it for
+# 90 days as a private download on the run's page (Actions > this workflow > the run > Artifacts).
+# The weekly request also keeps the free Supabase project from pausing for inactivity.
+# It does nothing until the secrets below are added, so it is safe to leave switched on.
+#
+# Repository Settings > Secrets and variables > Actions, add:
+#   SUPABASE_URL         the Project URL, for example https://abcdefgh.supabase.co
+#   SUPABASE_ANON_KEY    the anon (publishable) key
+#   BACKUP_TOKEN         the token you set with supabase/05-backup-token.sql
+#   BACKUP_PASSPHRASE    a passphrase you choose. Keep it in your password manager:
+#                        without it the backups cannot be opened.
+#
+# The repository is public, so the file is encrypted before it is stored and nothing
+# from the data is ever printed in the log.
+#
+# To open a backup: download and unzip the artifact, then run
+#   gpg --decrypt members-backup-YYYY-MM-DD.json.gpg > backup.json
+
+on:
+  schedule:
+    - cron: "17 2 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      BACKUP_TOKEN: ${{ secrets.BACKUP_TOKEN }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Check that the secrets are set
+        id: cfg
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$BACKUP_TOKEN" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "The backup secrets are not set yet, so nothing was backed up."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download and encrypt
+        if: steps.cfg.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          umask 077
+          STAMP="$(date -u +%Y-%m-%d)"
+          BASE="${SUPABASE_URL%/}"
+          curl -sS --fail --max-time 120 \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg t "$BACKUP_TOKEN" '{p_token: $t}')" \
+            "$BASE/rest/v1/rpc/backup_export" -o export.json
+          jq -e '.members | type == "array"' export.json > /dev/null
+          echo "Members in this backup: $(jq '.members | length' export.json)"
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            -o "members-backup-$STAMP.json.gpg" export.json
+          shred -u export.json
+
+      - name: Keep the encrypted backup
+        if: steps.cfg.outputs.go == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: members-backup
+          path: members-backup-*.json.gpg
+          retention-days: 90
+          if-no-files-found: error

@@ -7,7 +7,7 @@ Paste everything below the line into a new Claude Code session opened in this pr
 You are finishing the website and member platform for Change Bible Church Sandton (CBC Sandton), a branch of Change Bible Church. The goal is a launch at https://cbcsandton.co.za as a very fast, simple, mobile first web app that members can install on their phone, with registration, member logins, a leaders area, notices and giving, backed by the church's own database.
 
 ## Read first
-README.md, docs/PROJECT-CONSIDERATIONS.md, public/site.config.js, .github/workflows/pages.yml and .github/workflows/xneelo.yml, supabase/website-integration.sql, scripts/import_members.py. Check the project memory notes if you have them.
+README.md, docs/PROJECT-CONSIDERATIONS.md, public/site.config.js, .github/workflows/pages.yml and .github/workflows/xneelo.yml, supabase/02-website-integration.sql, scripts/import_members.py. Check the project memory notes if you have them.
 
 ## Current state (treat as fact, verify before relying on it)
 * Static site in public/: plain HTML, CSS and vanilla JS, no build step. Pages: index, login, member (members), admin (leaders), privacy, 404.
@@ -45,7 +45,7 @@ README.md, docs/PROJECT-CONSIDERATIONS.md, public/site.config.js, .github/workfl
 
 ### D. The real database (needs me for the account steps)
 * Walk me through creating the Supabase project with a church email address (Cape Town region if offered). I create the account.
-* Then: run supabase/website-integration.sql, fill url, anonKey and churchId in public/site.config.js, set the Auth site URL to https://cbcsandton.co.za, help me choose email confirmation and set up SMTP.
+* Then: run supabase/02-website-integration.sql, fill url, anonKey and churchId in public/site.config.js, set the Auth site URL to https://cbcsandton.co.za, help me choose email confirmation and set up SMTP.
 * Import the 89 members: run scripts/import_members.py with --write and --church-id, run the generated SQL in the Supabase editor, fix the 3 flagged records (incomplete email, doubtful phone, two people on one email), then tell me to delete the import files.
 * Test the whole journey with real accounts on a real phone: register, leader approves, invite, activate, login, edit details, read a notice, sign out. Prove a member cannot see other members.
 * Remove the demo: delete public/demo.js and its script tags, and set demo to false.

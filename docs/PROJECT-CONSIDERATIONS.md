@@ -130,7 +130,7 @@ The site does not take payments itself. It sends people to your payment gateway'
 * [x] The members area signs in with ChurchHub logins, so there is no second password to manage
 * [x] Approving a registration makes it a normal active member in the app
 * [ ] Confirm the ChurchHub Supabase project exists and the original schema has been run
-* [ ] Run `supabase/website-integration.sql` once
+* [ ] Run `supabase/02-website-integration.sql` once
 * [ ] Copy the church id, project URL and anon key into `public/site.config.js`
 * [ ] Never use the service role (secret) key anywhere in the website
 * [ ] Decide whether website sign ups should be members or visitors in ChurchHub
