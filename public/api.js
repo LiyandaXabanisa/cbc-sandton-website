@@ -731,7 +731,106 @@
           });
         },
       };
-    })(),    roles: {
+    })(),    ministries: {
+      all: function () {
+        return sbRequest("/rest/v1/ministries?select=*&order=name", { method: "GET" }, true).then(function (rows) {
+          return (rows || []).map(function (r) { return { id: r.id, slug: r.slug, name: r.name, colour: r.colour, description: r.description || "" }; });
+        });
+      },
+      mine: function () {
+        return rpc("my_ministries").then(
+          function (rows) {
+            return (rows || []).map(function (r) { return { id: r.id, slug: r.slug, name: r.name, colour: r.colour, description: r.description || "", role: r.my_role }; });
+          },
+          function () { return []; }
+        );
+      },
+    },
+    worship: {
+      songs: function (query, includeArchived) {
+        return rpc("list_songs", { p_query: query || null, p_include_archived: !!includeArchived }).then(function (rows) {
+          return (rows || []).map(function (r) { return { id: r.id, title: r.title, author: r.author || "", archived: !!r.archived, versions: r.version_count, keys: r.keys || "" }; });
+        });
+      },
+      song: function (id) {
+        return rpc("get_song", { p_song: id }).then(function (r) {
+          if (!r) return null;
+          return {
+            id: r.id,
+            title: r.title,
+            author: r.author || "",
+            archived: !!r.archived,
+            versions: (r.versions || []).map(function (v) { return { id: v.id, label: v.label, key: v.musical_key || "", lyrics: v.lyrics || "", notes: v.notes || "" }; }),
+          };
+        });
+      },
+      saveSong: function (id, o) {
+        var versions = (o.versions || []).map(function (v) {
+          return { id: v.id || null, label: v.label, musical_key: v.key || null, lyrics: v.lyrics || null, notes: v.notes || null };
+        });
+        return rpc("save_song", { p_song: id || null, p_title: o.title, p_author: o.author || null, p_versions: versions });
+      },
+      archive: function (id, flag) {
+        return rpc("set_song_archived", { p_song: id, p_archived: !!flag }).then(noop);
+      },
+      setLists: function () {
+        return rpc("list_set_lists").then(function (rows) {
+          return (rows || []).map(function (r) { return { id: r.id, title: r.title, startsAt: r.starts_at, status: r.status, songCount: r.song_count }; });
+        });
+      },
+      setList: function (id) {
+        return rpc("get_set_list", { p_set: id }).then(function (r) {
+          if (!r) return null;
+          return {
+            id: r.id,
+            title: r.title,
+            startsAt: r.starts_at,
+            status: r.status,
+            notes: r.notes || "",
+            programItemId: r.program_item_id || null,
+            songs: (r.songs || []).map(function (s) {
+              return {
+                songId: s.song_id,
+                title: s.title,
+                author: s.author || "",
+                versionId: s.version_id || null,
+                versionLabel: s.version_label || "",
+                key: s.musical_key || "",
+                lyrics: s.lyrics || "",
+                songNotes: s.song_notes || "",
+                notes: s.notes || "",
+              };
+            }),
+          };
+        });
+      },
+      createSet: function (o) {
+        return rpc("create_set_list", { p_title: o.title, p_starts_at: o.startsAt, p_program_item: o.programItemId || null, p_copy_from: o.copyFrom || null });
+      },
+      saveSet: function (id, o) {
+        var songs = (o.songs || []).map(function (s) {
+          return { song_id: s.songId, version_id: s.versionId || null, musical_key: s.key || null, notes: s.notes || null };
+        });
+        return rpc("save_set_list", { p_set: id, p_title: o.title || null, p_starts_at: o.startsAt || null, p_program_item: o.programItemId || null, p_songs: songs, p_notes: o.notes || null }).then(noop);
+      },
+      publishSet: function (id, flag) {
+        return rpc("publish_set_list", { p_set: id, p_publish: !!flag }).then(noop);
+      },
+      deleteSet: function (id) {
+        return rpc("delete_set_list", { p_set: id }).then(noop);
+      },
+      colours: function () {
+        return rpc("list_colour_plans").then(function (rows) {
+          return (rows || []).map(function (r) { return { id: r.id, date: r.service_date, colours: r.colours || [], note: r.note || "", status: r.status }; });
+        });
+      },
+      saveColours: function (o) {
+        return rpc("save_colour_plan", { p_date: o.date, p_colours: o.colours, p_note: o.note || null, p_publish: !!o.publish });
+      },
+      deleteColours: function (id) {
+        return rpc("delete_colour_plan", { p_id: id }).then(noop);
+      },
+    },    roles: {
       mine: function () {
         return rpc("my_roles").then(
           function (rows) { return (rows || []).map(function (r) { return r.role; }); },
@@ -756,8 +855,8 @@
           });
         });
       },
-      grant: function (userId, role, expiresAt) {
-        return rpc("grant_role", { p_user: userId, p_role: role, p_scope_type: null, p_scope_id: null, p_expires_at: expiresAt || null });
+      grant: function (userId, role, expiresAt, scopeId) {
+        return rpc("grant_role", { p_user: userId, p_role: role, p_scope_type: scopeId ? "ministry" : null, p_scope_id: scopeId || null, p_expires_at: expiresAt || null });
       },
       revoke: function (grantId) {
         return rpc("revoke_role", { p_grant_id: grantId }).then(noop);

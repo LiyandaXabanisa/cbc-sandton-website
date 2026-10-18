@@ -81,7 +81,21 @@
     return lines;
   }
 
-  var api = { timeline: timeline, diff: diff, describe: describe, clock: clock, dayLabel: dayLabel, TZ: TZ };
+  // A datetime-local box shows the church's own time (South Africa), whatever the computer's clock says.
+  function toInput(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    return new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(d).replace(" ", "T");
+  }
+
+  // The reverse: a South African wall clock time (UTC+2, no daylight saving) to an instant.
+  function fromInput(value) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value || "");
+    if (!m) return null;
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 2, +m[5])).toISOString();
+  }
+
+  var api = { timeline: timeline, diff: diff, describe: describe, clock: clock, dayLabel: dayLabel, toInput: toInput, fromInput: fromInput, TZ: TZ };
   if (typeof window !== "undefined") window.CBC_PL = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();

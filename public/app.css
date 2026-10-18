@@ -278,3 +278,24 @@ body.app dialog .field label{text-transform:none;letter-spacing:0;font-family:va
 .item-files{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:0.92rem;}
 .upload-label{display:block;font-weight:600;font-size:0.88rem;margin-top:8px;}
 .upload-label input{display:block;margin-top:6px;font-weight:400;max-width:100%;}
+
+/* ministries and Praise and Worship */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--card);color:var(--paper-text);border:1px solid var(--line);border-left:6px solid var(--ink-muted);border-radius:12px;padding:12px 14px;cursor:pointer;font-family:var(--font-body);min-height:56px;}
+.tile strong{font-size:1rem;}
+.tile span{font-size:0.82rem;color:var(--ink-muted);}
+.tile:hover{border-color:var(--ink-muted);}
+.min-area > .btn{margin-bottom:12px;}
+.w-song{flex-direction:column;align-items:stretch;gap:8px;}
+.w-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.w-line{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.w-line select{flex:1;min-width:0;}
+.w-line input[type=text]{flex:1;min-width:0;}
+.w-line input[type=color]{width:52px;height:44px;padding:2px;flex:none;}
+.w-song input,.w-song select{width:100%;}
+.lyrics{white-space:pre-wrap;font-family:var(--font-body);font-size:0.95rem;margin:8px 0 0;background:var(--app-bg);border-radius:10px;padding:10px 12px;}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;}
+.swatch{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 6px;font-size:0.88rem;}
+.swatch i{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.2);display:inline-block;}
+.pick-list{max-height:50vh;overflow-y:auto;margin-top:8px;}
+.min-area h2{margin-top:14px;}

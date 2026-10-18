@@ -48,3 +48,11 @@ test("empty text and missing text count as the same", () => {
   const d = diff({ title: "A", items: [item("a", 1, "X", { notes: "" })] }, { title: "A", items: [item("a", 1, "X", { notes: null })] });
   assert.deepEqual(describe(d), []);
 });
+
+test("a South African wall clock time round trips through the input helpers", () => {
+  const lib = createRequire(import.meta.url)("../../public/programlib.js");
+  assert.equal(lib.fromInput("2026-10-25T10:00"), "2026-10-25T08:00:00.000Z");
+  assert.equal(lib.toInput("2026-10-25T08:00:00.000Z"), "2026-10-25T10:00");
+  assert.equal(lib.fromInput("nonsense"), null);
+  assert.equal(lib.toInput("nonsense"), "");
+});

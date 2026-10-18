@@ -22,6 +22,15 @@
     $("#avatar").hidden = name !== "app";
   }
 
+  var toastTimer;
+  function toast(message, isError) {
+    var t = $("#toast");
+    t.textContent = message;
+    t.className = "toast show" + (isError ? " error" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = "toast"; }, 3500);
+  }
+
   function toLogin() {
     window.location.replace("login.html");
   }
@@ -431,6 +440,9 @@
           if (name === "program" && window.CBC_MPROG) window.CBC_MPROG.showList();
         });
         if (API.program && window.CBC_MPROG) window.CBC_MPROG.init({ API: API, nav: nav, el: el, $: $, when: when });
+        if (API.worship && window.CBC_MIN) {
+          window.CBC_MIN.init({ API: API, nav: nav, $: $, toast: toast, handleError: function (err) { if (err && err.auth) return toLogin(); toast((err && err.message) || "Something went wrong.", true); }, toLogin: toLogin });
+        }
         $("#avatar").addEventListener("click", function () { nav.show("profile"); });
         nav.start("home");
         window.CBC_APP.bell(API);

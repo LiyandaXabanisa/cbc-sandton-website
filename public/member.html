@@ -66,6 +66,7 @@
 
 <div id="print-area" class="print-area" aria-hidden="true"></div>
 
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <main class="app-main" id="main">
 
   <section class="card" id="loading-view">
@@ -86,6 +87,11 @@
       </div>
 
       <div class="urgent-stack" id="urgent-stack" hidden></div>
+
+      <section class="dash-section" id="min-section" aria-labelledby="min-title" hidden>
+        <h2 id="min-title">My ministries</h2>
+        <div class="tiles" id="min-tiles-home"></div>
+      </section>
 
       <section class="dash-section" id="mine-section" aria-labelledby="mine-title" hidden>
         <h2 id="mine-title">Your part</h2>
@@ -121,6 +127,11 @@
       </div>
       <p class="muted" id="mp-when"></p>
       <div id="mp-items"></div>
+    </div>
+
+    <div data-view-panel="ministry" data-parent="home" hidden>
+      <button class="link back" id="min-back" data-back="home" type="button">&larr; Home</button>
+      <div id="min-root"></div>
     </div>
 
     <div data-view-panel="sermons" hidden>
@@ -181,6 +192,7 @@
 <script src="app.js"></script>
 <script src="programlib.js"></script>
 <script src="member.js"></script>
+<script src="ministry.js"></script>
 <script src="memberprogram.js"></script>
 <script src="pwa.js" defer></script>
 </body>

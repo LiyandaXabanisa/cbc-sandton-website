@@ -51,6 +51,10 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
     <span>Program</span>
   </button>
+  <button type="button" data-view="ministries" id="nav-ministries">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .8 3.5 2.4 3.5 5.2"/></svg>
+    <span>Ministries</span>
+  </button>
   <button type="button" data-view="content">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
     <span>Content</span>
@@ -136,6 +140,18 @@
         <button class="btn btn-outline" id="pe-print" type="button">Print</button>
         <button class="btn btn-danger" id="pe-delete" type="button">Delete program</button>
       </div>
+    </div>
+
+    <div data-view-panel="ministries" hidden>
+      <div class="page-head"><h1>Ministries</h1></div>
+      <p class="muted notices-intro">Each ministry has its own workspace. Praise and Worship is ready; the others are coming. Give people their ministry role in Settings, People and roles.</p>
+      <div class="tiles" id="min-tiles"></div>
+      <p class="empty" id="min-empty" hidden>No ministries yet.</p>
+    </div>
+
+    <div data-view-panel="ministry" data-parent="ministries" hidden>
+      <button class="link back" id="min-back" data-back="ministries" type="button">&larr; Ministries</button>
+      <div id="min-root"></div>
     </div>
 
     <div data-view-panel="content" hidden>
@@ -313,8 +329,14 @@
         <select id="rl-role">
           <option value="platform_manager">Platform Manager (plans the program and manages the platform)</option>
           <option value="media_team">Media Team (reads and downloads sermon material)</option>
+          <option value="ministry_leader">Ministry Leader (runs one ministry)</option>
+          <option value="ministry_member">Ministry Team Member (belongs to one ministry)</option>
           <option value="senior_pastor" id="rl-pastor-option">Senior Pastor (full authority, Senior Pastor only)</option>
         </select>
+      </div>
+      <div class="field" id="rl-ministry-wrap" hidden>
+        <label for="rl-ministry">Ministry</label>
+        <select id="rl-ministry"></select>
       </div>
       <div class="field">
         <label for="rl-until">Ends on (optional)</label>
@@ -567,6 +589,7 @@
 <script src="richtext.js"></script>
 <script src="app.js"></script>
 <script src="programlib.js"></script>
+<script src="ministry.js"></script>
 <script src="admin.js"></script>
 <script src="program.js"></script>
 <script src="pwa.js" defer></script>
