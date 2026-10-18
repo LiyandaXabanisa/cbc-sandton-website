@@ -256,3 +256,10 @@ test("anonymous visitors cannot call any soup kitchen function", async () => {
     "save_kitchen_task('" + M0 + "', null, 'x', 'other', null, null, null, '[]')", "delete_kitchen_task(null)", "set_kitchen_task_done(null, true)", "set_kitchen_check(null, true)", "kitchen_can_see('" + M0 + "')"];
   for (const c of calls) await fails(as(db, null, () => db.query("select * from " + c)), /permission denied/);
 });
+
+test("only managers can list all volunteers when choosing a leader", async () => {
+  await fails(q(U.lead, "select * from kitchen_volunteers()"), manager);
+  await fails(q(U.plain, "select * from kitchen_volunteers()"), manager);
+  assert.deepEqual((await q(U.nomsa, "select full_name from kitchen_volunteers()")).map((r) => r.full_name), ["lead", "lead2", "v1", "v2", "v3", "v4"]);
+  await fails(as(db, null, () => db.query("select * from kitchen_volunteers()")), /permission denied/);
+});

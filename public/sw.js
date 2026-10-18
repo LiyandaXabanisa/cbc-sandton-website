@@ -9,7 +9,7 @@
 //
 // To force every phone to drop its saved copies after a release, change VERSION below.
 
-const VERSION = "v11";
+const VERSION = "v12";
 const CACHE = "cbc-sandton-" + VERSION;
 const OFFLINE_PAGE = "offline.html";
 

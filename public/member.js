@@ -440,6 +440,7 @@
           if (name === "program" && window.CBC_MPROG) window.CBC_MPROG.showList();
         });
         if (API.program && window.CBC_MPROG) window.CBC_MPROG.init({ API: API, nav: nav, el: el, $: $, when: when });
+        if (API.kitchen && window.CBC_KITCHEN) window.CBC_KITCHEN.home({ API: API });
         if (API.worship && window.CBC_MIN) {
           window.CBC_MIN.init({ API: API, nav: nav, $: $, toast: toast, handleError: function (err) { if (err && err.auth) return toLogin(); toast((err && err.message) || "Something went wrong.", true); }, toLogin: toLogin });
         }

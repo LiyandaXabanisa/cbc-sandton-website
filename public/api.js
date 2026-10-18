@@ -746,7 +746,101 @@
         );
       },
     },
-    worship: {
+    kitchen: (function () {
+      function mapMonth(r) {
+        if (!r) return null;
+        return {
+          id: r.id,
+          month: r.month,
+          teamName: r.team_name || "",
+          leaderId: r.leader_id || null,
+          leaderName: r.leader_name || "",
+          isLeader: !!r.is_leader,
+          isManager: !!r.is_manager,
+          isCurrent: !!r.is_current,
+          isPast: !!r.is_past,
+          members: (r.members || []).map(function (m) { return { userId: m.user_id, name: m.name || "Someone", isLeader: !!m.is_leader }; }),
+          tasks: (r.tasks || []).map(function (t) {
+            return {
+              id: t.id,
+              title: t.title,
+              category: t.category,
+              assigneeId: t.assignee_id || null,
+              assigneeName: t.assignee_name || "",
+              dueDate: t.due_date || null,
+              done: !!t.done,
+              notes: t.notes || "",
+              checklist: (t.checklist || []).map(function (c) { return { id: c.id, text: c.text, done: !!c.done }; }),
+            };
+          }),
+        };
+      }
+      return {
+        schedule: function () {
+          return rpc("kitchen_schedule").then(function (rows) {
+            return (rows || []).map(function (r) {
+              return { monthId: r.month_id, month: r.month, teamName: r.team_name || "", leaderId: r.leader_id || null, leaderName: r.leader_name || "", members: r.member_count, amMember: !!r.am_member, amLeader: !!r.am_leader };
+            });
+          });
+        },
+        month: function (id) {
+          return rpc("get_kitchen_month", { p_month: id }).then(mapMonth);
+        },
+        volunteers: function () {
+          return rpc("kitchen_volunteers").then(function (rows) {
+            return (rows || []).map(function (r) { return { userId: r.user_id, name: r.full_name }; });
+          });
+        },
+        pool: function (monthId) {
+          return rpc("kitchen_pool", { p_month: monthId }).then(function (rows) {
+            return (rows || []).map(function (r) { return { userId: r.user_id, name: r.full_name }; });
+          });
+        },
+        saveMonth: function (o) {
+          return rpc("save_kitchen_month", { p_month: o.month, p_leader: o.leaderId, p_team_name: o.teamName || null });
+        },
+        deleteMonth: function (id) {
+          return rpc("delete_kitchen_month", { p_month: id }).then(noop);
+        },
+        admit: function (monthId, userId) {
+          return rpc("admit_kitchen_member", { p_month: monthId, p_user: userId }).then(noop);
+        },
+        remove: function (monthId, userId) {
+          return rpc("remove_kitchen_member", { p_month: monthId, p_user: userId }).then(noop);
+        },
+        saveTask: function (monthId, t) {
+          var checklist = (t.checklist || []).map(function (c) { return { id: c.id || null, text: c.text, done: !!c.done }; });
+          return rpc("save_kitchen_task", {
+            p_month: monthId, p_task: t.id || null, p_title: t.title, p_category: t.category, p_assignee: t.assigneeId || null,
+            p_due: t.dueDate || null, p_notes: t.notes || null, p_checklist: checklist,
+          });
+        },
+        deleteTask: function (id) {
+          return rpc("delete_kitchen_task", { p_task: id }).then(noop);
+        },
+        setDone: function (id, flag) {
+          return rpc("set_kitchen_task_done", { p_task: id, p_done: !!flag }).then(noop);
+        },
+        setCheck: function (id, flag) {
+          return rpc("set_kitchen_check", { p_item: id, p_done: !!flag }).then(noop);
+        },
+        mine: function () {
+          return rpc("my_kitchen").then(
+            function (r) {
+              if (!r) return null;
+              return {
+                onTeam: !!r.on_team,
+                monthId: r.month_id || null,
+                month: r.month,
+                nextTurn: r.next_turn || null,
+                tasks: (r.tasks || []).map(function (t) { return { id: t.id, title: t.title, category: t.category, dueDate: t.due_date || null }; }),
+              };
+            },
+            function () { return null; }
+          );
+        },
+      };
+    })(),    worship: {
       songs: function (query, includeArchived) {
         return rpc("list_songs", { p_query: query || null, p_include_archived: !!includeArchived }).then(function (rows) {
           return (rows || []).map(function (r) { return { id: r.id, title: r.title, author: r.author || "", archived: !!r.archived, versions: r.version_count, keys: r.keys || "" }; });

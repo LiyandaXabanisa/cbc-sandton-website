@@ -317,6 +317,25 @@ begin
 end;
 $$;
 
+-- Managers choosing a month's leader: every volunteer in the Soup Kitchen ministry.
+create or replace function kitchen_volunteers()
+returns table (user_id uuid, full_name text)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_church uuid := require_manager();
+begin
+  return query
+    select m.user_id, m.full_name
+    from members m
+    where m.church_id = v_church and m.is_active and m.user_id is not null and kitchen_in_pool(m.user_id)
+    order by m.full_name;
+end;
+$$;
+
 create or replace function kitchen_require_leader(p_month uuid)
 returns kitchen_months
 language plpgsql
@@ -642,6 +661,7 @@ revoke all on function delete_kitchen_month(uuid) from public, anon, authenticat
 revoke all on function kitchen_schedule() from public, anon, authenticated;
 revoke all on function get_kitchen_month(uuid) from public, anon, authenticated;
 revoke all on function kitchen_pool(uuid) from public, anon, authenticated;
+revoke all on function kitchen_volunteers() from public, anon, authenticated;
 revoke all on function admit_kitchen_member(uuid, uuid) from public, anon, authenticated;
 revoke all on function remove_kitchen_member(uuid, uuid) from public, anon, authenticated;
 revoke all on function save_kitchen_task(uuid, uuid, text, text, uuid, date, text, jsonb) from public, anon, authenticated;
@@ -659,6 +679,7 @@ grant execute on function delete_kitchen_month(uuid) to authenticated;
 grant execute on function kitchen_schedule() to authenticated;
 grant execute on function get_kitchen_month(uuid) to authenticated;
 grant execute on function kitchen_pool(uuid) to authenticated;
+grant execute on function kitchen_volunteers() to authenticated;
 grant execute on function admit_kitchen_member(uuid, uuid) to authenticated;
 grant execute on function remove_kitchen_member(uuid, uuid) to authenticated;
 grant execute on function save_kitchen_task(uuid, uuid, text, text, uuid, date, text, jsonb) to authenticated;
