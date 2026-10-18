@@ -38,8 +38,8 @@ window.SITE_CONFIG = {
   //              "service_role" / "secret" key here.
   //   churchId : the id of your church row in the `churches` table
   supabase: {
-    url: "",
-    anonKey: "",
-    churchId: "",
+    url: "https://wbmzixsjlmnjcwyzozbi.supabase.co",
+    anonKey: "sb_publishable_TyRY7Qh6ix4lFcXE7Ris5w_tBGIDaXh",
+    churchId: "7ba1b908-8d7b-4203-a031-213ce1dc3322",
   },
 };
