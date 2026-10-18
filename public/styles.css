@@ -533,3 +533,10 @@ footer .footer-top{flex-direction:column;align-items:center;text-align:center;ga
 @media (max-width:520px){ .form-row{gap:0;} }
 .field.consent{flex-direction:column;align-items:center;gap:10px;}
 .field.consent input{margin:0;}
+
+/* ---------- NO DATABASE YET ---------- */
+/* env.js adds .no-accounts to the page until a database is connected. Everything marked data-accounts hides. */
+.no-accounts [data-accounts]{display:none !important;}
+.no-accounts #give{background:var(--bone-100);}
+.no-accounts .give-card{background:var(--bone-50);}
+.give-action{min-height:44px;}

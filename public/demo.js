@@ -6,28 +6,15 @@
 // so registration, login, the member area and the leaders area all work for a
 // showcase. Nothing is ever sent anywhere.
 //
-// It switches itself on only when:
+// env.js switches it on only when:
 //   * site.config.js has  demo: true  and the address is one of demoHosts (default github.io), or
 //   * the address ends with  ?demo=1  (handy for trying it on your own computer)
-// and it switches itself off the moment the Supabase details are filled in.
+// and it stays off whenever the Supabase details are filled in.
 // To remove it for good, delete this file and its <script> tags.
 
 (function () {
-  var cfg = window.SITE_CONFIG || {};
-  var sb = cfg.supabase || {};
-  if (sb.url && sb.anonKey && sb.churchId) return; // a real database is connected
-
-  var loc = window.location || {};
-  var host = (loc.hostname || "").toLowerCase();
-  var forced = /[?&]demo=1(&|$)/.test(loc.search || "");
-  // Only the addresses listed in demoHosts (default: the GitHub preview) get the demo,
-  // so the real church domain never shows sample data by accident.
-  var demoHosts = Array.isArray(cfg.demoHosts) ? cfg.demoHosts : ["github.io"];
-  var onDemoHost = demoHosts.some(function (h) {
-    h = String(h).toLowerCase();
-    return host === h || host.slice(-(h.length + 1)) === "." + h;
-  });
-  if (!(forced || (cfg.demo === true && onDemoHost))) return;
+  // env.js decides when the demo runs (the GitHub preview, or ?demo=1), and never when a real database is connected.
+  if (!(window.CBC_ENV && window.CBC_ENV.demo)) return;
 
   var LEADER_EMAIL = "leader@demo.example";
   var MEMBER_EMAIL = "grace.tau@example.com";

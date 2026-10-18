@@ -523,13 +523,5 @@
     },
   };
 
-  var host = (window.location && window.location.hostname) || "";
-  if (!useSupabase && cfg.demo !== true && host && host !== "localhost" && host !== "127.0.0.1") {
-    console.info(
-      "CBC site: no database is connected. Registration and logins stay switched off until the " +
-        "Supabase url, anonKey and churchId are filled in public/site.config.js (see README.md)."
-    );
-  }
-
   window.CBC_API = useSupabase ? supabaseApi : localApi;
 })();

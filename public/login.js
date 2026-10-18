@@ -1,4 +1,10 @@
 (function () {
+  // Without a database (the live domain for now) these pages do not exist for visitors.
+  if (window.CBC_ENV && !window.CBC_ENV.accounts) {
+    window.location.replace("index.html");
+    return;
+  }
+
   var API = window.CBC_API;
   var auth = API.auth;
 
@@ -40,7 +46,7 @@
   }
 
   function friendly(err, fallback) {
-    if (err && err.unavailable) return "Member login is opening soon. Please check back shortly.";
+    if (err && err.unavailable) return "Login isn't available right now. Please try again later.";
     var msg = err && err.message;
     if (!msg || /failed to fetch|networkerror|load failed/i.test(msg)) return "Couldn't reach the server. Please try again.";
     return msg || fallback;
@@ -133,9 +139,9 @@
     })
     .catch(function (err) {
       if (err && err.unavailable) {
-        $("#notice-title").textContent = "Member login is opening soon";
+        $("#notice-title").textContent = "Login isn't available";
         $("#notice-body").textContent =
-          "Logins aren't switched on yet. Please check back soon, or speak to someone at the church on Sunday.";
+          "Please try again later, or speak to someone at the church on Sunday.";
         show("notice");
       } else {
         show("signin");

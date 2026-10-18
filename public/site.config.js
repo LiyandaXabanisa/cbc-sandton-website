@@ -7,7 +7,7 @@ window.SITE_CONFIG = {
   // Paste the https:// payment links from your payment gateway between the quotes.
   // titheLink and offeringLink: a separate link for each button.
   // generalLink: used for any button whose own link is left blank.
-  // While a button has no link, visitors see a disabled "Link coming soon" button.
+  // If a button has no link at all, visitors see a disabled "Link coming soon" button.
   giving: {
     generalLink: "https://pos.snapscan.io/qr/PXMP9891",
     titheLink: "https://pos.snapscan.io/qr/PXMP9891",
@@ -19,11 +19,12 @@ window.SITE_CONFIG = {
   // (fake members, notices and demo logins stored in the visitor's own browser) so
   // the whole site can be tried out. A banner on every page says it is a demo.
   // It switches itself off as soon as the Supabase details below are filled in.
-  // Set to false to show "opening soon" messages instead.
   // demoHosts lists the addresses that get the demo. The default is only the GitHub
-  // preview, so the real domain (cbcsandton.co.za) shows "opening soon" messages
-  // until the real database is connected. Add ?demo=1 to any page address to try the
-  // demo anywhere.
+  // preview. On the real domain (cbcsandton.co.za) there is no demo, so until the real
+  // database is connected the registration section, Login links, "Become a member"
+  // buttons and the privacy link are hidden (see env.js). They appear by themselves
+  // once the Supabase details below are filled in. Add ?demo=1 to any page address to
+  // try the demo anywhere.
   demo: true,
   demoHosts: ["github.io"],
 

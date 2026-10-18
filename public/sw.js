@@ -9,7 +9,7 @@
 //
 // To force every phone to drop its saved copies after a release, change VERSION below.
 
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = "cbc-sandton-" + VERSION;
 const OFFLINE_PAGE = "offline.html";
 
@@ -22,6 +22,7 @@ const PRECACHE = [
   "script.js",
   "api.js",
   "site.config.js",
+  "env.js",
   "manifest.webmanifest",
   "assets/emblem.svg",
   "assets/fonts/archivo-var.woff2",

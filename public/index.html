@@ -9,6 +9,8 @@
 <link rel="preload" href="assets/fonts/fraunces-italic-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
+<script src="site.config.js"></script>
+<script src="env.js"></script>
 <link rel="icon" href="assets/emblem.svg" type="image/svg+xml">
 <link rel="icon" href="assets/icon-192.png" sizes="192x192" type="image/png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -63,11 +65,11 @@
       <a href="#vision">Our vision</a>
       <a href="#sundays">Sundays</a>
       <a href="#visit">Visit us</a>
-      <a href="#register">Register</a>
+      <a href="#register" data-accounts>Register</a>
       <a href="#give">Give</a>
-      <a href="login.html">Login</a>
+      <a href="login.html" data-accounts>Login</a>
     </nav>
-    <a class="btn btn-gold" href="#register">Become a member</a>
+    <a class="btn btn-gold" href="#register" data-accounts>Become a member</a>
     <button class="menu-toggle" aria-expanded="false" aria-controls="mobile-panel" aria-label="Open menu">
       <span></span>
     </button>
@@ -76,10 +78,10 @@
     <a href="#vision">Our vision</a>
     <a href="#sundays">Sundays</a>
     <a href="#visit">Visit us</a>
-    <a href="#register">Register</a>
+    <a href="#register" data-accounts>Register</a>
     <a href="#give">Give</a>
-    <a href="login.html">Login</a>
-    <a class="btn btn-gold" href="#register">Become a member</a>
+    <a href="login.html" data-accounts>Login</a>
+    <a class="btn btn-gold" href="#register" data-accounts>Become a member</a>
   </div>
 </header>
 
@@ -199,8 +201,8 @@
         </div>
       </div>
 
-      <div class="oos-cta">
-        <a class="btn btn-gold" href="#register">Become a member</a>
+      <div class="oos-cta" data-accounts>
+        <a class="btn btn-gold" href="#register" data-accounts>Become a member</a>
       </div>
     </div>
   </section>
@@ -235,14 +237,14 @@
           <img class="emblem" src="assets/emblem.svg" alt="" width="64" height="64" loading="lazy" decoding="async">
           <h3>First time here?</h3>
           <p>Come as you are. Prayer starts at 09:00, and the Sunday service, with worship, the word and a warm welcome, runs from 10:00 to 11:45.</p>
-          <a class="btn btn-ghost-light" href="#register">Become a member</a>
+          <a class="btn btn-ghost-light" href="#register" data-accounts>Become a member</a>
         </div>
       </div>
     </div>
   </section>
 
   <!-- REGISTER -->
-  <section class="panel-dark" id="register">
+  <section class="panel-dark" id="register" data-accounts>
     <div class="container">
       <div class="section-head">
         <p class="eyebrow">New here?</p>
@@ -320,16 +322,12 @@
         <article class="give-card">
           <h3>Tithe</h3>
           <p>Your regular tithe, set apart for the work of the church.</p>
-          <div class="give-action" data-give="tithe" data-label="Give your tithe">
-            <span class="btn btn-disabled" aria-disabled="true">Link coming soon</span>
-          </div>
+          <div class="give-action" data-give="tithe" data-label="Give your tithe"><noscript>Please turn on JavaScript to give online.</noscript></div>
         </article>
         <article class="give-card">
           <h3>Offering</h3>
           <p>A freely given gift towards the church&rsquo;s needs and outreach.</p>
-          <div class="give-action" data-give="offering" data-label="Give an offering">
-            <span class="btn btn-disabled" aria-disabled="true">Link coming soon</span>
-          </div>
+          <div class="give-action" data-give="offering" data-label="Give an offering"><noscript>Please turn on JavaScript to give online.</noscript></div>
         </article>
       </div>
 
@@ -354,12 +352,11 @@
     </div>
     <div class="footer-bottom">
       <span>&copy; 2026 Change Bible Church Sandton</span>
-      <span class="footer-links"><a href="privacy.html">Privacy notice</a> <a href="login.html">Login</a></span>
+      <span class="footer-links"><a href="privacy.html" data-accounts>Privacy notice</a> <a href="login.html" data-accounts>Login</a></span>
     </div>
   </div>
 </footer>
 
-<script src="site.config.js"></script>
 <script src="api.js"></script>
 <script src="demo.js"></script>
 <script src="script.js"></script>

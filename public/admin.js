@@ -1,4 +1,10 @@
 (function () {
+  // Without a database (the live domain for now) these pages do not exist for visitors.
+  if (window.CBC_ENV && !window.CBC_ENV.accounts) {
+    window.location.replace("index.html");
+    return;
+  }
+
   var API = window.CBC_API;
   var admin = API.admin;
 
@@ -443,8 +449,8 @@
       if (err && err.auth) return toLogin();
       if (err && err.unavailable) {
         return showNotice(
-          "Leaders area is opening soon",
-          "This area isn't switched on yet. Please check back soon."
+          "This page isn't available",
+          "Please try again later."
         );
       }
       showNotice("Couldn't load members", (err && err.message) || "Please refresh the page and try again.");

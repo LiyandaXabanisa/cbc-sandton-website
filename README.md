@@ -64,6 +64,14 @@ python scripts/import_members.py "C:/path/to/Membership.xlsx" --write   # create
 * Rows with a problem (an incomplete email, a doubtful phone number, two people on one email) are kept, with a note on the member so a leader can fix them.
 * Use `--local` to add the members to the local demo server instead.
 
+## What visitors see before the database is connected
+
+On the live domain, until the Supabase details are filled in `public/site.config.js`, everything that needs a database is hidden: the registration section, the Register and Login links, the Become a member buttons and the footer privacy link. Visitors see Sundays, giving, the address and the vision, with no "opening soon" notices. The Login, member and leaders pages send visitors back to the home page.
+
+`public/env.js` decides this on every page load, before the page is drawn. It shows everything again, by itself, when a database is connected, on the GitHub preview (demo), on `localhost`, or with `?demo=1` on the address. Anything that should hide until then carries the attribute `data-accounts`.
+
+When you go live with the database: connect Supabase, finish `public/privacy.html`, then delete the `noindex` line near the top of that page so search engines can list it.
+
 ## The demo database (temporary)
 
 GitHub Pages cannot run a database, so until the real ChurchHub database is connected, `public/demo.js` provides a built in **demo database** with sample members, notices and logins. It lives only in the visitor's own browser, and a banner on every page says so.

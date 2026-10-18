@@ -28,14 +28,22 @@
   document.querySelectorAll("[data-give]").forEach(function (slot) {
     var kind = slot.getAttribute("data-give");
     var url = safeHttpsUrl(giving[kind + "Link"]) || safeHttpsUrl(giving.generalLink);
-    if (!url) return; // keep the "Link coming soon" placeholder
-    var a = document.createElement("a");
-    a.className = "btn btn-gold";
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.textContent = slot.getAttribute("data-label") || "Give";
-    slot.replaceChildren(a);
+    var el;
+    if (url) {
+      el = document.createElement("a");
+      el.className = "btn btn-gold";
+      el.href = url;
+      el.target = "_blank";
+      el.rel = "noopener noreferrer";
+      el.textContent = slot.getAttribute("data-label") || "Give";
+    } else {
+      // no payment link in site.config.js yet
+      el = document.createElement("span");
+      el.className = "btn btn-disabled";
+      el.setAttribute("aria-disabled", "true");
+      el.textContent = "Link coming soon";
+    }
+    slot.replaceChildren(el);
   });
 
   // ---------- registration form ----------
@@ -83,7 +91,7 @@
       .catch(function (err) {
         var msg = err && err.message ? err.message : "";
         if (err && err.unavailable) {
-          msg = "Online registration isn't switched on yet. Please see us on Sunday and we'll add your details.";
+          msg = "Registration isn't available right now. Please try again later, or see us on Sunday and we'll add your details.";
         } else if (!msg || /fetch|network/i.test(msg)) {
           msg = "Couldn't reach the server. Please try again in a moment.";
         }
