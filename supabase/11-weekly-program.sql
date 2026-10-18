@@ -72,6 +72,7 @@ create table if not exists program_item_files (
   created_at timestamptz not null default now()
 );
 create index if not exists program_item_files_item on program_item_files (item_id);
+alter table program_item_files alter column uploaded_by set default auth.uid();
 
 alter table programs enable row level security;
 alter table program_items enable row level security;

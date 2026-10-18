@@ -1163,11 +1163,19 @@
       $("#mode-note").textContent = API.mode === "supabase" ? "" : API.modeLabel;
       return reloadMembers().then(function () {
         show("app");
+        if (!API.program) $("#nav-program").hidden = true;
         var nav = window.CBC_APP.views(function (name) {
           if (name === "content") selectTab(lastTab);
           if (name === "roles") loadRoles();
+          if (name === "program" && window.CBC_PROGRAM) window.CBC_PROGRAM.showList();
         });
         appNav = nav;
+        if (API.program && window.CBC_PROGRAM) {
+          window.CBC_PROGRAM.init({
+            API: API, nav: nav, h: h, $: $, toast: toast, handleError: handleError, toLogin: toLogin,
+            dialogError: dialogError, actionButton: actionButton, members: function () { return members; },
+          });
+        }
         $("#avatar").addEventListener("click", function () { nav.show("settings"); });
         nav.start("members");
         window.CBC_APP.bell(API);

@@ -47,6 +47,10 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.5 0 4.5 1.5 4.5 4.5"/></svg>
     <span>Members</span>
   </button>
+  <button type="button" data-view="program" id="nav-program">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+    <span>Program</span>
+  </button>
   <button type="button" data-view="content">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
     <span>Content</span>
@@ -56,6 +60,8 @@
     <span>Settings</span>
   </button>
 </nav>
+
+<div id="print-area" class="print-area" aria-hidden="true"></div>
 
 <main class="app-main wide" id="main">
 
@@ -89,6 +95,47 @@
 
       <div class="list" id="members-list"></div>
       <p class="empty" id="empty" hidden></p>
+    </div>
+
+    <div data-view-panel="program" hidden>
+      <div class="page-head">
+        <h1>Program</h1>
+        <div class="actions"><button class="btn btn-gold btn-sm" id="new-program" type="button">New program</button></div>
+      </div>
+      <p class="muted notices-intro">Plan each service as time slotted items. Everyone presenting, the media team and the managers are told when a published program changes.</p>
+      <div class="list" id="program-list"></div>
+      <p class="empty" id="program-empty" hidden>No programs yet. Use New program to plan the first service.</p>
+    </div>
+
+    <div data-view-panel="program-edit" data-parent="program" hidden>
+      <button class="link back" id="pe-back" type="button">&larr; Program</button>
+      <div class="page-head">
+        <h1 id="pe-heading">Program</h1>
+        <div class="actions">
+          <button class="btn btn-gold btn-sm" id="pe-save" type="button" disabled>Save changes</button>
+          <button class="btn btn-outline btn-sm" id="pe-publish" type="button">Publish</button>
+        </div>
+      </div>
+      <div class="form-card">
+        <div class="field">
+          <label for="pe-title">Title</label>
+          <input id="pe-title" type="text" maxlength="120" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="pe-start">Service starts</label>
+          <input id="pe-start" type="datetime-local">
+        </div>
+        <p class="muted" id="pe-status"></p>
+      </div>
+      <p class="muted" id="pe-summary"></p>
+      <div class="p-items" id="pe-items"></div>
+      <p class="empty" id="pe-empty" hidden>No items yet. Use Add item to start the order of service.</p>
+      <div class="p-footer">
+        <button class="btn btn-outline" id="pe-add" type="button">Add item</button>
+        <button class="btn btn-outline" id="pe-history" type="button">History</button>
+        <button class="btn btn-outline" id="pe-print" type="button">Print</button>
+        <button class="btn btn-danger" id="pe-delete" type="button">Delete program</button>
+      </div>
     </div>
 
     <div data-view-panel="content" hidden>
@@ -165,6 +212,93 @@
     </div>
 
   </div>
+
+  <dialog id="pn-dialog" aria-labelledby="pn-title">
+    <form id="pn-form" novalidate>
+      <h2 id="pn-title">New program</h2>
+      <div class="field">
+        <label for="pn-name">Title</label>
+        <input id="pn-name" type="text" maxlength="120" autocomplete="off" value="Sunday Service">
+      </div>
+      <div class="field">
+        <label for="pn-start">Service starts</label>
+        <input id="pn-start" type="datetime-local" required>
+      </div>
+      <div class="field">
+        <label for="pn-copy">Start from</label>
+        <select id="pn-copy"><option value="">A blank program</option></select>
+        <p class="hint">Copying keeps the order, lengths and notes, but not the presenters.</p>
+      </div>
+      <div class="field">
+        <label for="pn-service">Linked service (optional)</label>
+        <select id="pn-service"><option value="">Not linked</option></select>
+      </div>
+      <p class="form-status" id="pn-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="pn-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="pn-save">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="pi-dialog" aria-labelledby="pi-title">
+    <form id="pi-form" novalidate>
+      <h2 id="pi-title">Add item</h2>
+      <div class="field">
+        <label for="pi-name">What happens</label>
+        <input id="pi-name" type="text" maxlength="120" autocomplete="off" placeholder="Praise and worship" required>
+      </div>
+      <div class="field">
+        <label for="pi-min">Length in minutes</label>
+        <input id="pi-min" type="number" min="1" max="600" step="1" value="5" required>
+      </div>
+      <div class="field">
+        <label for="pi-dept">Department (optional)</label>
+        <input id="pi-dept" type="text" maxlength="80" list="pi-depts" autocomplete="off">
+        <datalist id="pi-depts"><option value="Praise and Worship"></option><option value="Media"></option><option value="Ushers"></option><option value="Pastoral"></option><option value="Youth"></option><option value="Ladies"></option><option value="Men"></option><option value="Intercessors"></option></datalist>
+      </div>
+      <div class="field">
+        <label for="pi-pres">Presenter (optional)</label>
+        <select id="pi-pres"></select>
+        <p class="hint">A presenter can upload their slides or lyrics for this item until the end of the service day. Only members with a login are listed.</p>
+      </div>
+      <div class="field" id="pi-other-wrap" hidden>
+        <label for="pi-other">Presenter name</label>
+        <input id="pi-other" type="text" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="pi-notes">Notes for the team (optional)</label>
+        <textarea id="pi-notes" rows="3" maxlength="4000"></textarea>
+        <p class="hint">Only managers, the media team and the presenter see notes.</p>
+      </div>
+      <p class="form-status" id="pi-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="pi-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="pi-save">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="ps-dialog" aria-labelledby="ps-title">
+    <form id="ps-form" novalidate>
+      <h2 id="ps-title">Save changes</h2>
+      <p class="muted" id="ps-note"></p>
+      <div class="field">
+        <label for="ps-summary">What changed? (optional)</label>
+        <input id="ps-summary" type="text" maxlength="200" autocomplete="off" placeholder="Moved the testimony before the offering">
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="ps-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="ps-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="ph-dialog" aria-labelledby="ph-title">
+    <h2 id="ph-title">History</h2>
+    <div id="ph-list"></div>
+    <div class="dialog-actions"><button class="btn btn-outline" type="button" id="ph-close">Close</button></div>
+  </dialog>
 
   <dialog id="role-dialog" aria-labelledby="role-dialog-title">
     <form id="role-form" novalidate>
@@ -432,7 +566,9 @@
 <script src="youtube.js"></script>
 <script src="richtext.js"></script>
 <script src="app.js"></script>
+<script src="programlib.js"></script>
 <script src="admin.js"></script>
+<script src="program.js"></script>
 <script src="pwa.js" defer></script>
 </body>
 </html>
