@@ -189,9 +189,12 @@ Settled:
 * Teens 13 to 17. Youth Community 15 and over. Ages 15 to 17 may use both.
 * Stack: Supabase and the existing pages, not React and tRPC.
 
+Received:
+
+* Church email contact for notifications: cbcsandtonit@gmail.com. A Gmail address cannot be used as the sender of automatic email through a mail service, which needs the church's own domain. Notifications will be sent from an address on cbcsandton.co.za (for example notifications@cbcsandton.co.za, created in the xneelo control panel), and cbcsandtonit@gmail.com can receive replies and bounces.
+* Youth leader: Monde Ndlovu. Moderation rights are given only after the church has vetted the person (see section 6).
+
 Still needed from the church:
 
 * Names of the three Platform Manager delegates.
 * Nomsa's official title.
-* The church sending address for email notifications.
-* Who the vetted youth leaders will be.
