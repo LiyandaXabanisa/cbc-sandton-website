@@ -265,6 +265,7 @@
       createdAt: r.created_at,
       joinedAt: r.joined_at || null,
       hasAccount: !!r.user_id,
+      userId: r.user_id || null,
     };
   }
 
@@ -573,8 +574,38 @@
           function () { return []; }
         );
       },
-    },
-    notifications: {
+      // Everyone's roles in this church (managers only), newest first.
+      list: function () {
+        return rpc("list_role_grants").then(function (rows) {
+          return (rows || []).map(function (r) {
+            return {
+              id: r.id,
+              userId: r.user_id,
+              name: r.full_name || "Someone",
+              role: r.role,
+              scopeType: r.scope_type || null,
+              scopeId: r.scope_id || null,
+              grantedAt: r.granted_at,
+              expiresAt: r.expires_at || null,
+              revokedAt: r.revoked_at || null,
+            };
+          });
+        });
+      },
+      grant: function (userId, role, expiresAt) {
+        return rpc("grant_role", { p_user: userId, p_role: role, p_scope_type: null, p_scope_id: null, p_expires_at: expiresAt || null });
+      },
+      revoke: function (grantId) {
+        return rpc("revoke_role", { p_grant_id: grantId }).then(noop);
+      },
+      audit: function () {
+        return sbRequest("/rest/v1/audit_log?select=*&order=at.desc&limit=40", { method: "GET" }, true).then(function (rows) {
+          return (rows || []).map(function (r) {
+            return { id: r.id, at: r.at, actorId: r.actor_id || null, action: r.action, targetId: r.target_user || null, role: r.role || "", expiresAt: (r.detail && r.detail.expires_at) || null };
+          });
+        });
+      },
+    },    notifications: {
       list: function () {
         return rpc("my_notifications").then(
           function (rows) {

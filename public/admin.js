@@ -974,6 +974,166 @@
     }
     tab.addEventListener("click", function () { selectTab(k); });
   });
+  // ---------- people and roles ----------
+  var ROLE_LABEL = {
+    senior_pastor: "Senior Pastor",
+    platform_manager: "Platform Manager",
+    media_team: "Media Team",
+    item_renderer: "Item Renderer",
+    ministry_leader: "Ministry Leader",
+    ministry_member: "Ministry Member",
+  };
+  var grants = [];
+  var auditRows = [];
+  var showPast = false;
+  var appNav = null;
+
+  function grantState(g) {
+    if (g.revokedAt) return "removed";
+    if (g.expiresAt && new Date(g.expiresAt).getTime() <= Date.now()) return "ended";
+    return "active";
+  }
+
+  function nameOf(userId) {
+    if (!userId) return "The system";
+    var g = grants.filter(function (x) { return x.userId === userId; })[0];
+    if (g) return g.name;
+    var m = members.filter(function (x) { return x.userId === userId; })[0];
+    return m ? m.fullName : "A leader";
+  }
+
+  function untilText(iso) {
+    return iso ? "until " + new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "no end date";
+  }
+
+  function renderRolesList() {
+    var box = $("#roles-list");
+    box.replaceChildren();
+    var rows = grants
+      .filter(function (g) { return showPast || grantState(g) === "active"; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name) || a.role.localeCompare(b.role); });
+    $("#roles-empty").hidden = rows.length > 0;
+    box.hidden = rows.length === 0;
+    box.className = rows.length ? "list" : "";
+    rows.forEach(function (g) {
+      var state = grantState(g);
+      var right = state === "active"
+        ? actionButton("Remove", "btn-outline", function () { removeRole(g); })
+        : h("span", { class: "pill inactive", text: state });
+      box.append(
+        h(
+          "div",
+          { class: "row" },
+          h("span", { class: "av", text: window.CBC_APP.initials(g.name) }),
+          h("span", { class: "main" }, h("span", { class: "name", text: g.name }), h("span", { class: "sub", text: (ROLE_LABEL[g.role] || g.role) + "  |  " + untilText(g.expiresAt) })),
+          right
+        )
+      );
+    });
+  }
+
+  function sentence(a) {
+    var role = ROLE_LABEL[a.role] || a.role;
+    var actor = nameOf(a.actorId);
+    var target = nameOf(a.targetId);
+    if (a.action === "granted") return actor + " gave " + role + " to " + target + (a.expiresAt ? " (" + untilText(a.expiresAt) + ")" : "");
+    if (a.action === "revoked") return actor + " removed " + role + " from " + target;
+    if (a.action === "expired") return role + " ended for " + target;
+    if (a.action === "seeded") return "The first roles were set up";
+    return actor + " " + a.action;
+  }
+
+  function renderAudit() {
+    var box = $("#audit-list");
+    box.replaceChildren();
+    $("#audit-empty").hidden = auditRows.length > 0;
+    box.hidden = auditRows.length === 0;
+    auditRows.forEach(function (a) {
+      box.append(
+        h(
+          "div",
+          { class: "row" },
+          h("span", { class: "main" }, h("span", { class: "name", text: sentence(a) }), h("span", { class: "sub", text: formatWhen(a.at) }))
+        )
+      );
+    });
+  }
+
+  function loadRoles() {
+    return Promise.all([API.roles.list(), API.roles.audit()])
+      .then(function (r) {
+        grants = r[0];
+        auditRows = r[1];
+        renderRolesList();
+        renderAudit();
+      })
+      .catch(handleError);
+  }
+
+  function removeRole(g) {
+    if (!window.confirm("Remove " + (ROLE_LABEL[g.role] || g.role) + " from " + g.name + "?")) return;
+    API.roles.revoke(g.id).then(loadRoles).then(function () { toast("Role removed"); }).catch(handleError);
+  }
+
+  var roleDialog = $("#role-dialog");
+
+  function openRoleDialog() {
+    var sel = $("#rl-person");
+    sel.replaceChildren();
+    var people = members
+      .filter(function (m) { return m.hasAccount && m.userId && m.status === "active"; })
+      .sort(function (a, b) { return a.fullName.localeCompare(b.fullName); });
+    people.forEach(function (m) { sel.append(h("option", { value: m.userId, text: m.fullName })); });
+    $("#role-save").disabled = people.length === 0;
+    if (!people.length) sel.append(h("option", { value: "", text: "No one has a login yet" }));
+    $("#rl-pastor-option").disabled = !isPastor;
+    $("#rl-role").value = "platform_manager";
+    $("#rl-until").value = "";
+    $("#role-error").className = "form-status";
+    roleDialog.showModal();
+  }
+
+  $("#add-role").addEventListener("click", openRoleDialog);
+  $("#role-cancel").addEventListener("click", function () { roleDialog.close(); });
+  $("#roles-past").addEventListener("click", function () {
+    showPast = !showPast;
+    $("#roles-past").setAttribute("aria-pressed", String(showPast));
+    renderRolesList();
+  });
+  $("#roles-back").addEventListener("click", function () { if (appNav) appNav.show("settings"); });
+  $("#open-roles").addEventListener("click", function () { if (appNav) appNav.show("roles"); });
+  $("#open-roles").hidden = !(API.roles && API.roles.list);
+
+  $("#role-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fail = function (m) { dialogError("#role-error", m); };
+    var userId = $("#rl-person").value;
+    var role = $("#rl-role").value;
+    var untilDay = $("#rl-until").value;
+    if (!userId) return fail("Choose a person.");
+    var expires = null;
+    if (untilDay) {
+      var end = new Date(untilDay + "T23:59:59");
+      if (isNaN(end) || end.getTime() <= Date.now()) return fail("The end date must be in the future.");
+      expires = end.toISOString();
+    }
+    if (role === "senior_pastor" && !isPastor) return fail("Only the Senior Pastor can give that role.");
+
+    var save = $("#role-save");
+    save.disabled = true;
+    API.roles
+      .grant(userId, role, expires)
+      .then(loadRoles)
+      .then(function () {
+        roleDialog.close();
+        toast("Role given");
+      })
+      .catch(function (err) {
+        if (err && err.auth) return toLogin();
+        fail((err && err.message) || "Couldn't save. Please try again.");
+      })
+      .then(function () { save.disabled = false; });
+  });
   // ---------- demo data reset ----------
   if (API.demo) {
     $("#demo-reset").hidden = false;
@@ -1005,7 +1165,9 @@
         show("app");
         var nav = window.CBC_APP.views(function (name) {
           if (name === "content") selectTab(lastTab);
+          if (name === "roles") loadRoles();
         });
+        appNav = nav;
         $("#avatar").addEventListener("click", function () { nav.show("settings"); });
         nav.start("members");
         window.CBC_APP.bell(API);

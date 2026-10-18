@@ -139,13 +139,62 @@
       <div class="page-head"><h1>Settings</h1></div>
       <p class="muted" id="mode-note"></p>
       <div class="list">
+        <button class="row" id="open-roles" type="button" hidden>
+          <span class="main"><span class="name">People and roles</span><span class="sub">Who can publish, plan and manage</span></span>
+          <span class="go"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+        </button>
         <a class="row" href="index.html"><span class="main"><span class="name">Visit the church website</span></span></a>
         <button class="row" id="demo-reset" type="button" hidden><span class="main"><span class="name">Reset demo data</span></span></button>
         <button class="row" id="signout" type="button"><span class="main"><span class="name">Sign out</span></span></button>
       </div>
     </div>
 
+    <div data-view-panel="roles" data-parent="settings" hidden>
+      <button class="link back" id="roles-back" type="button">&larr; Settings</button>
+      <div class="page-head">
+        <h1>People and roles</h1>
+        <div class="actions"><button class="btn btn-gold btn-sm" id="add-role" type="button">Give a role</button></div>
+      </div>
+      <p class="muted notices-intro">A role gives someone extra access. Everyone who is an active member can already see member content. Church leaders with a leaders login also have manager access.</p>
+      <div id="roles-list"></div>
+      <p class="empty" id="roles-empty" hidden>No roles have been given yet. Use Give a role to add the first one.</p>
+      <div class="chips"><button class="chip" id="roles-past" type="button" aria-pressed="false">Show past roles</button></div>
+      <h2>Recent changes</h2>
+      <div class="list" id="audit-list"></div>
+      <p class="empty" id="audit-empty" hidden>Nothing has changed yet.</p>
+    </div>
+
   </div>
+
+  <dialog id="role-dialog" aria-labelledby="role-dialog-title">
+    <form id="role-form" novalidate>
+      <h2 id="role-dialog-title">Give a role</h2>
+      <div class="field">
+        <label for="rl-person">Person</label>
+        <select id="rl-person"></select>
+        <p class="hint" id="rl-person-hint">Only members who have activated a login are listed. If someone is missing, press Invite on their row in Members, and they can activate it.</p>
+      </div>
+      <div class="field">
+        <label for="rl-role">Role</label>
+        <select id="rl-role">
+          <option value="platform_manager">Platform Manager (plans the program and manages the platform)</option>
+          <option value="media_team">Media Team (reads and downloads sermon material)</option>
+          <option value="senior_pastor" id="rl-pastor-option">Senior Pastor (full authority, Senior Pastor only)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="rl-until">Ends on (optional)</label>
+        <input id="rl-until" type="date">
+        <p class="hint">Leave empty for no end date. Access stops at the end of that day.</p>
+      </div>
+      <p class="form-status" id="role-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="role-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="role-save">Give role</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="member-dialog" aria-labelledby="dialog-title">
     <form id="member-form" novalidate>
       <h2 id="dialog-title">Add member</h2>

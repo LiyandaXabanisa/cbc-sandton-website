@@ -233,3 +233,9 @@ dialog[open]{max-height:92vh;overflow-y:auto;}
 .bell-item.unread strong::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold-500);margin-right:8px;}
 .bell-item small{color:var(--ink-muted);}
 .player:has(.player-ratio){flex-basis:100%;}
+
+.link.back{margin:0 0 10px;padding:6px 0;font-size:0.9rem;}
+
+#audit-list .name,#roles-list .sub{white-space:normal;overflow:visible;text-overflow:clip;}
+body.app dialog .field label,body.app dialog .field .hint{text-align:left;}
+body.app dialog .field label{text-transform:none;letter-spacing:0;font-family:var(--font-body);font-size:0.88rem;font-weight:600;color:var(--paper-text);}
