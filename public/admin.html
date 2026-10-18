@@ -65,11 +65,19 @@
       <div class="admin-actions" id="notices-actions" hidden>
         <button class="btn btn-gold" id="add-notice" type="button">New notice</button>
       </div>
+      <div class="admin-actions" id="services-actions" hidden>
+        <button class="btn btn-gold" id="add-service" type="button">New service</button>
+      </div>
+      <div class="admin-actions" id="reminders-actions" hidden>
+        <button class="btn btn-gold" id="add-reminder" type="button">New reminder</button>
+      </div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-members" aria-selected="true" aria-controls="panel-members" type="button">Members</button>
       <button class="tab" role="tab" id="tab-notices" aria-selected="false" aria-controls="panel-notices" type="button">Notices</button>
+      <button class="tab" role="tab" id="tab-services" aria-selected="false" aria-controls="panel-services" type="button" data-needs="services">Services</button>
+      <button class="tab" role="tab" id="tab-reminders" aria-selected="false" aria-controls="panel-reminders" type="button" data-needs="reminders">Reminders</button>
     </div>
 
     <div id="panel-members" role="tabpanel" aria-labelledby="tab-members">
@@ -101,6 +109,18 @@
       <p class="muted notices-intro">Notices appear in the member area, and only for signed-in members.</p>
       <div id="notices-list"></div>
       <p class="empty" id="notices-empty" hidden>No notices yet. Use New notice to post the first one.</p>
+    </div>
+
+    <div id="panel-services" role="tabpanel" aria-labelledby="tab-services" hidden>
+      <p class="muted notices-intro">Services and events appear on each member's dashboard for the week ahead.</p>
+      <div id="services-list"></div>
+      <p class="empty" id="services-empty" hidden>No services yet. Use New service to add this week's.</p>
+    </div>
+
+    <div id="panel-reminders" role="tabpanel" aria-labelledby="tab-reminders" hidden>
+      <p class="muted notices-intro">Urgent reminders show in a banner at the top of the member dashboard. They disappear on their own after the expiry date.</p>
+      <div id="reminders-list"></div>
+      <p class="empty" id="reminders-empty" hidden>No reminders yet. Use New reminder to add one.</p>
     </div>
   </section>
 
@@ -150,6 +170,92 @@
       <div class="dialog-actions">
         <button class="btn btn-outline" type="button" id="notice-cancel">Cancel</button>
         <button class="btn btn-gold" type="submit" id="notice-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="service-dialog" aria-labelledby="service-dialog-title">
+    <form id="service-form" novalidate>
+      <h2 id="service-dialog-title">New service</h2>
+      <div class="field">
+        <label for="s-title">Title</label>
+        <input id="s-title" type="text" maxlength="120" autocomplete="off" placeholder="Sunday Service" required>
+      </div>
+      <div class="field">
+        <label for="s-start">Starts</label>
+        <input id="s-start" type="datetime-local" required>
+      </div>
+      <div class="field">
+        <label for="s-end">Ends (optional)</label>
+        <input id="s-end" type="datetime-local">
+      </div>
+      <div class="field">
+        <label for="s-venue">Venue (optional)</label>
+        <input id="s-venue" type="text" maxlength="200" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="s-stream">Live stream link (optional, https only)</label>
+        <input id="s-stream" type="url" maxlength="500" autocomplete="off" placeholder="https://">
+      </div>
+      <div class="field">
+        <label for="s-speaker">Speaker (optional)</label>
+        <input id="s-speaker" type="text" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="s-theme">Theme (optional)</label>
+        <input id="s-theme" type="text" maxlength="200" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="s-scripture">Scripture reading (optional)</label>
+        <input id="s-scripture" type="text" maxlength="200" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="s-desc">Notes (optional)</label>
+        <textarea id="s-desc" rows="4" maxlength="4000"></textarea>
+      </div>
+      <div class="field check">
+        <input id="s-published" type="checkbox" checked>
+        <label for="s-published">Visible to members</label>
+      </div>
+      <p class="form-status" id="service-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="service-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="service-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="reminder-dialog" aria-labelledby="reminder-dialog-title">
+    <form id="reminder-form" novalidate>
+      <h2 id="reminder-dialog-title">New reminder</h2>
+      <div class="field">
+        <label for="r-title">Title</label>
+        <input id="r-title" type="text" maxlength="120" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label for="r-body">Message (optional)</label>
+        <textarea id="r-body" rows="4" maxlength="2000"></textarea>
+      </div>
+      <div class="field">
+        <label for="r-priority">Priority</label>
+        <select id="r-priority">
+          <option value="normal">Normal</option>
+          <option value="important">Important</option>
+          <option value="urgent">Urgent (shows in a banner)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="r-expires">Disappears on (optional)</label>
+        <input id="r-expires" type="datetime-local">
+      </div>
+      <div class="field check">
+        <input id="r-published" type="checkbox" checked>
+        <label for="r-published">Visible to members</label>
+      </div>
+      <p class="form-status" id="reminder-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="reminder-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="reminder-save">Save</button>
       </div>
     </form>
   </dialog>

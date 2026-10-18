@@ -401,20 +401,266 @@
       .then(function () { save.disabled = false; });
   });
 
-  // ---------- tabs ----------
-  function selectTab(name) {
-    var isMembers = name === "members";
-    $("#tab-members").setAttribute("aria-selected", String(isMembers));
-    $("#tab-notices").setAttribute("aria-selected", String(!isMembers));
-    $("#panel-members").hidden = !isMembers;
-    $("#panel-notices").hidden = isMembers;
-    $("#members-actions").hidden = !isMembers;
-    $("#notices-actions").hidden = isMembers;
-    $("#page-title").textContent = isMembers ? "Members" : "Notices";
-    if (!isMembers) reloadNotices().catch(handleError);
+  // ---------- date helpers for services and reminders ----------
+  var TZ = "Africa/Johannesburg";
+
+  function formatWhen(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return "";
+    return d.toLocaleString("en-ZA", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: TZ });
   }
-  $("#tab-members").addEventListener("click", function () { selectTab("members"); });
-  $("#tab-notices").addEventListener("click", function () { selectTab("notices"); });
+
+  // A datetime-local box works in the browser's own time zone.
+  function toInput(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return "";
+    var local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function fromInput(value) {
+    if (!value) return null;
+    var d = new Date(value);
+    return isNaN(d) ? null : d.toISOString();
+  }
+
+  function dialogError(id, message) {
+    var el = $(id);
+    el.textContent = message;
+    el.className = "form-status show error";
+  }
+
+  // ---------- services ----------
+  var services = [];
+
+  function renderServices() {
+    var box = $("#services-list");
+    box.replaceChildren();
+    $("#services-empty").hidden = services.length > 0;
+    services.forEach(function (s) {
+      var details = [s.speaker && "Speaker: " + s.speaker, s.venue && "Venue: " + s.venue, s.theme && "Theme: " + s.theme]
+        .filter(Boolean)
+        .join("  |  ");
+      box.append(
+        h(
+          "article",
+          { class: "notice-card" },
+          h("div", { class: "notice-head" }, h("h3", { text: s.title }), h("span", { class: "pill " + (s.published ? "active" : "inactive"), text: s.published ? "visible" : "hidden" })),
+          h("p", { class: "notice-date", text: formatWhen(s.startsAt) }),
+          details ? h("p", { class: "notice-body", text: details }) : null,
+          h(
+            "div",
+            { class: "row-actions" },
+            actionButton("Edit", "btn-outline", function () { openServiceDialog(s); }),
+            actionButton("Duplicate", "btn-outline", function () { openServiceDialog(s, true); }),
+            actionButton(s.published ? "Hide" : "Show", "btn-outline", function () {
+              admin.services.update(s.id, Object.assign({}, s, { published: !s.published })).then(reloadServices).catch(handleError);
+            }),
+            actionButton("Delete", "btn-danger", function () {
+              if (!window.confirm("Delete “" + s.title + "”? This can't be undone.")) return;
+              admin.services.remove(s.id).then(reloadServices).then(function () { toast("Service deleted"); }).catch(handleError);
+            })
+          )
+        )
+      );
+    });
+  }
+
+  function reloadServices() {
+    return admin.services.list().then(function (list) {
+      services = list;
+      renderServices();
+    });
+  }
+
+  var serviceDialog = $("#service-dialog");
+  var editingService = null;
+
+  function openServiceDialog(s, asCopy) {
+    editingService = s && !asCopy ? s : null;
+    $("#service-dialog-title").textContent = editingService ? "Edit service" : "New service";
+    $("#s-title").value = s ? s.title : "";
+    // A copy keeps the details but moves one week ahead, which is the usual reason to copy.
+    var shift = asCopy ? 7 * 24 * 60 * 60 * 1000 : 0;
+    $("#s-start").value = s ? toInput(new Date(new Date(s.startsAt).getTime() + shift).toISOString()) : "";
+    $("#s-end").value = s && s.endsAt ? toInput(new Date(new Date(s.endsAt).getTime() + shift).toISOString()) : "";
+    $("#s-venue").value = s ? s.venue : "";
+    $("#s-stream").value = s ? s.streamUrl : "";
+    $("#s-speaker").value = s ? s.speaker : "";
+    $("#s-theme").value = s ? s.theme : "";
+    $("#s-scripture").value = s ? s.scripture : "";
+    $("#s-desc").value = s ? s.description : "";
+    $("#s-published").checked = s ? s.published : true;
+    $("#service-error").className = "form-status";
+    serviceDialog.showModal();
+    $("#s-title").focus();
+  }
+
+  $("#add-service").addEventListener("click", function () { openServiceDialog(null); });
+  $("#service-cancel").addEventListener("click", function () { serviceDialog.close(); });
+
+  $("#service-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var data = {
+      title: $("#s-title").value.trim(),
+      startsAt: fromInput($("#s-start").value),
+      endsAt: fromInput($("#s-end").value),
+      venue: $("#s-venue").value.trim(),
+      streamUrl: $("#s-stream").value.trim(),
+      speaker: $("#s-speaker").value.trim(),
+      theme: $("#s-theme").value.trim(),
+      scripture: $("#s-scripture").value.trim(),
+      description: $("#s-desc").value.trim(),
+      published: $("#s-published").checked,
+    };
+    var fail = function (m) { dialogError("#service-error", m); };
+    if (!data.title) return fail("Give the service a title.");
+    if (!data.startsAt) return fail("Choose when it starts.");
+    if (data.endsAt && new Date(data.endsAt) <= new Date(data.startsAt)) return fail("The end time must be after the start time.");
+    if (data.streamUrl && !/^https:\/\//i.test(data.streamUrl)) return fail("The live stream link must start with https://");
+
+    var save = $("#service-save");
+    save.disabled = true;
+    var job = editingService ? admin.services.update(editingService.id, data) : admin.services.create(data);
+    job
+      .then(reloadServices)
+      .then(function () {
+        serviceDialog.close();
+        toast(editingService ? "Service updated" : "Service added");
+      })
+      .catch(function (err) {
+        if (err && err.auth) return toLogin();
+        fail((err && err.message) || "Couldn't save. Please try again.");
+      })
+      .then(function () { save.disabled = false; });
+  });
+
+  // ---------- reminders ----------
+  var reminders = [];
+  var PRIORITY_LABEL = { urgent: "Urgent", important: "Important", normal: "Normal" };
+
+  function renderReminders() {
+    var box = $("#reminders-list");
+    box.replaceChildren();
+    $("#reminders-empty").hidden = reminders.length > 0;
+    var now = Date.now();
+    reminders.forEach(function (r) {
+      var expired = r.expiresAt && new Date(r.expiresAt).getTime() <= now;
+      var state = !r.published ? "hidden" : expired ? "expired" : "visible";
+      box.append(
+        h(
+          "article",
+          { class: "notice-card" },
+          h(
+            "div",
+            { class: "notice-head" },
+            h("h3", { text: r.title }),
+            h("span", { class: "pill " + (state === "visible" ? "active" : "inactive"), text: state })
+          ),
+          h("p", { class: "notice-date", text: PRIORITY_LABEL[r.priority] + (r.expiresAt ? "  |  until " + formatWhen(r.expiresAt) : "") }),
+          r.body ? h("p", { class: "notice-body", text: r.body }) : null,
+          h(
+            "div",
+            { class: "row-actions" },
+            actionButton("Edit", "btn-outline", function () { openReminderDialog(r); }),
+            actionButton(r.published ? "Hide" : "Show", "btn-outline", function () {
+              admin.reminders.update(r.id, Object.assign({}, r, { published: !r.published })).then(reloadReminders).catch(handleError);
+            }),
+            actionButton("Delete", "btn-danger", function () {
+              if (!window.confirm("Delete “" + r.title + "”? This can't be undone.")) return;
+              admin.reminders.remove(r.id).then(reloadReminders).then(function () { toast("Reminder deleted"); }).catch(handleError);
+            })
+          )
+        )
+      );
+    });
+  }
+
+  function reloadReminders() {
+    return admin.reminders.list().then(function (list) {
+      reminders = list;
+      renderReminders();
+    });
+  }
+
+  var reminderDialog = $("#reminder-dialog");
+  var editingReminder = null;
+
+  function openReminderDialog(r) {
+    editingReminder = r || null;
+    $("#reminder-dialog-title").textContent = r ? "Edit reminder" : "New reminder";
+    $("#r-title").value = r ? r.title : "";
+    $("#r-body").value = r ? r.body : "";
+    $("#r-priority").value = r ? r.priority : "normal";
+    $("#r-expires").value = r ? toInput(r.expiresAt) : "";
+    $("#r-published").checked = r ? r.published : true;
+    $("#reminder-error").className = "form-status";
+    reminderDialog.showModal();
+    $("#r-title").focus();
+  }
+
+  $("#add-reminder").addEventListener("click", function () { openReminderDialog(null); });
+  $("#reminder-cancel").addEventListener("click", function () { reminderDialog.close(); });
+
+  $("#reminder-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var data = {
+      title: $("#r-title").value.trim(),
+      body: $("#r-body").value.trim(),
+      priority: $("#r-priority").value,
+      publishAt: editingReminder ? editingReminder.publishAt : new Date().toISOString(),
+      expiresAt: fromInput($("#r-expires").value),
+      published: $("#r-published").checked,
+    };
+    var fail = function (m) { dialogError("#reminder-error", m); };
+    if (!data.title) return fail("Give the reminder a title.");
+    if (data.expiresAt && new Date(data.expiresAt) <= new Date(data.publishAt)) return fail("The disappear date must be in the future.");
+
+    var save = $("#reminder-save");
+    save.disabled = true;
+    var job = editingReminder ? admin.reminders.update(editingReminder.id, data) : admin.reminders.create(data);
+    job
+      .then(reloadReminders)
+      .then(function () {
+        reminderDialog.close();
+        toast(editingReminder ? "Reminder updated" : "Reminder added");
+      })
+      .catch(function (err) {
+        if (err && err.auth) return toLogin();
+        fail((err && err.message) || "Couldn't save. Please try again.");
+      })
+      .then(function () { save.disabled = false; });
+  });
+
+  // ---------- tabs ----------
+  var TABS = {
+    members: { title: "Members" },
+    notices: { title: "Notices", load: reloadNotices },
+    services: { title: "Services", load: reloadServices },
+    reminders: { title: "Reminders", load: reloadReminders },
+  };
+
+  function selectTab(name) {
+    Object.keys(TABS).forEach(function (k) {
+      var on = k === name;
+      $("#tab-" + k).setAttribute("aria-selected", String(on));
+      $("#panel-" + k).hidden = !on;
+      $("#" + k + "-actions").hidden = !on;
+    });
+    $("#page-title").textContent = TABS[name].title;
+    if (TABS[name].load) TABS[name].load().catch(handleError);
+  }
+
+  Object.keys(TABS).forEach(function (k) {
+    var tab = $("#tab-" + k);
+    var needs = tab.getAttribute("data-needs");
+    // Services and reminders only exist once the real database is connected.
+    if (needs && !admin[needs]) {
+      tab.hidden = true;
+      return;
+    }
+    tab.addEventListener("click", function () { selectTab(k); });
+  });
 
   // ---------- demo data reset ----------
   if (API.demo) {

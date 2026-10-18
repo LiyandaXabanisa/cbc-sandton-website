@@ -57,6 +57,132 @@
     });
   }
 
+  // ----- services and reminders (only when the real database provides them) -----
+  var TZ = "Africa/Johannesburg";
+  var PRIORITY_LABEL = { urgent: "Urgent", important: "Important", normal: "Normal" };
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function when(iso, withDay) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return "";
+    return d.toLocaleString("en-ZA", {
+      weekday: withDay ? "long" : undefined,
+      day: withDay ? "numeric" : undefined,
+      month: withDay ? "long" : undefined,
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: TZ,
+    });
+  }
+
+  function readDismissed() {
+    try {
+      return JSON.parse(sessionStorage.getItem("cbc_dismissed") || "[]");
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function dismiss(id) {
+    var list = readDismissed();
+    list.push(id);
+    try {
+      sessionStorage.setItem("cbc_dismissed", JSON.stringify(list));
+    } catch (_) {}
+  }
+
+  function renderUrgent(list) {
+    var stack = $("#urgent-stack");
+    stack.replaceChildren();
+    var gone = readDismissed();
+    var urgent = list.filter(function (r) { return r.priority === "urgent" && gone.indexOf(r.id) === -1; });
+    stack.hidden = urgent.length === 0;
+    urgent.forEach(function (r) {
+      var banner = el("div", "urgent-banner");
+      banner.setAttribute("role", "alert");
+      var text = el("div", "urgent-text");
+      text.append(el("strong", null, "Urgent: " + r.title));
+      if (r.body) text.append(el("span", null, r.body));
+      var close = el("button", "urgent-close", "Dismiss");
+      close.type = "button";
+      close.addEventListener("click", function () {
+        dismiss(r.id);
+        banner.remove();
+        if (!stack.children.length) stack.hidden = true;
+      });
+      banner.append(text, close);
+      stack.append(banner);
+    });
+  }
+
+  function renderServices(list) {
+    $("#services-section").hidden = false;
+    var box = $("#service-list");
+    box.replaceChildren();
+    $("#service-empty").hidden = list.length > 0;
+    var now = Date.now();
+    list.forEach(function (s) {
+      var card = el("article", "service-card");
+      card.append(el("h3", null, s.title));
+      var time = when(s.startsAt, true);
+      if (s.endsAt) time += " to " + when(s.endsAt, false);
+      card.append(el("p", "service-when", time));
+      [["Venue", s.venue], ["Speaker", s.speaker], ["Theme", s.theme], ["Scripture", s.scripture]].forEach(function (row) {
+        if (!row[1]) return;
+        var p = el("p", "service-line");
+        p.append(el("span", "service-key", row[0]), " " + row[1]);
+        card.append(p);
+      });
+      if (s.description) card.append(el("p", "service-notes", s.description));
+      // The live link appears half an hour before the start and stays until the end.
+      var start = new Date(s.startsAt).getTime();
+      var end = s.endsAt ? new Date(s.endsAt).getTime() : start + 3 * 60 * 60 * 1000;
+      if (s.streamUrl && /^https:\/\//i.test(s.streamUrl) && now >= start - 30 * 60 * 1000 && now <= end) {
+        var join = el("a", "btn btn-gold btn-sm", "Join live");
+        join.href = s.streamUrl;
+        join.target = "_blank";
+        join.rel = "noopener noreferrer";
+        card.append(join);
+      }
+      box.append(card);
+    });
+  }
+
+  function renderReminders(list) {
+    $("#reminders-section").hidden = false;
+    var box = $("#reminder-list");
+    box.replaceChildren();
+    $("#reminder-empty").hidden = list.length > 0;
+    list.forEach(function (r) {
+      var item = el("article", "reminder-item priority-" + r.priority);
+      var head = el("div", "reminder-head");
+      head.append(el("span", "priority-badge", PRIORITY_LABEL[r.priority] || "Normal"), el("h3", null, r.title));
+      item.append(head);
+      if (r.body) item.append(el("p", "reminder-body", r.body));
+      if (r.expiresAt) item.append(el("p", "reminder-until", "Until " + when(r.expiresAt, true)));
+      box.append(item);
+    });
+  }
+
+  // A problem here (for example the database update has not been run yet) must never break the dashboard.
+  function loadDashboard() {
+    if (API.member.services) {
+      API.member.services().then(renderServices, function () {});
+    }
+    if (API.member.reminders) {
+      API.member.reminders().then(function (list) {
+        renderUrgent(list);
+        renderReminders(list);
+      }, function () {});
+    }
+  }
+
   function fill(member) {
     $("#welcome").textContent = "Welcome, " + member.fullName.split(" ")[0];
     $("#since").textContent = member.joinedAt ? "Member since " + formatDate(member.joinedAt) : "";
@@ -118,6 +244,7 @@
         fill(r[0]);
         renderNotices(r[1]);
         show("app");
+        loadDashboard();
       });
     })
     .catch(handleAuth);

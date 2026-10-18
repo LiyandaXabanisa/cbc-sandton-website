@@ -187,3 +187,38 @@ button.link{
 .social .or{margin:0;width:100%;display:flex;align-items:center;gap:12px;font-size:0.85rem;color:var(--ink-muted)}
 .social .or::before,.social .or::after{content:"";flex:1;border-top:1px solid var(--line, #d9dee5)}
 .social-btn{width:100%;max-width:320px}
+
+.tabs{flex-wrap:wrap}
+.tab[hidden]{display:none}
+.tab{padding:12px 14px}
+
+/* ---------- member dashboard: services and reminders ---------- */
+.dash-section{margin:0 auto 34px;max-width:760px;}
+.dash-section h2{margin-bottom:14px;}
+.service-card,.reminder-item{
+  background:var(--bg);border:1px solid var(--rule-light);border-radius:4px;padding:18px 18px 16px;margin-bottom:14px;text-align:center;
+}
+.service-card h3,.reminder-item h3{margin:0 0 4px;font-size:1.15rem;}
+.service-when{margin:0 0 10px;color:var(--gold-ink);font-weight:600;}
+.service-line{margin:4px 0;font-size:0.95rem;}
+.service-key{font-weight:600;color:var(--ink-muted);margin-right:4px;}
+.service-notes{margin:12px 0 0;white-space:pre-line;font-size:0.95rem;}
+.service-card .btn{margin-top:14px;}
+.reminder-head{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.priority-badge{
+  font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;padding:3px 10px;border-radius:999px;
+  background:var(--bone-100,#f4f6f8);color:var(--paper-text);border:1px solid var(--rule-light);
+}
+.priority-important .priority-badge{background:#fdf3dc;color:#6b4a0c;border-color:#e7c675;}
+.priority-urgent .priority-badge{background:#fcebeb;color:#8a1f1f;border-color:#e7a3a3;}
+.priority-urgent{border-color:#e7a3a3;}
+.priority-important{border-color:#e7c675;}
+.reminder-body{margin:8px 0 0;white-space:pre-line;font-size:0.95rem;}
+.reminder-until{margin:8px 0 0;font-size:0.82rem;color:var(--ink-muted);}
+.urgent-stack{max-width:760px;margin:0 auto 22px;display:grid;gap:10px;}
+.urgent-banner{
+  display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+  background:#fcebeb;color:#6e1717;border:1px solid #e7a3a3;border-radius:4px;padding:14px 16px;
+}
+.urgent-text{display:flex;flex-direction:column;gap:4px;}
+.urgent-close{background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;min-height:44px;padding:0 12px;}

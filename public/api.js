@@ -295,6 +295,98 @@
     };
   }
 
+  function fromService(r) {
+    return {
+      id: r.id,
+      title: r.title,
+      startsAt: r.starts_at,
+      endsAt: r.ends_at || null,
+      venue: r.venue || "",
+      streamUrl: r.stream_url || "",
+      speaker: r.speaker || "",
+      theme: r.theme || "",
+      scripture: r.scripture || "",
+      description: r.description || "",
+      published: r.is_published !== false,
+    };
+  }
+
+  function toServiceRow(s) {
+    return {
+      title: s.title,
+      starts_at: s.startsAt,
+      ends_at: s.endsAt || null,
+      venue: s.venue || null,
+      stream_url: s.streamUrl || null,
+      speaker: s.speaker || null,
+      theme: s.theme || null,
+      scripture: s.scripture || null,
+      description: s.description || null,
+      is_published: s.published !== false,
+    };
+  }
+
+  function fromReminder(r) {
+    return {
+      id: r.id,
+      title: r.title,
+      body: r.body || "",
+      priority: r.priority,
+      publishAt: r.publish_at,
+      expiresAt: r.expires_at || null,
+      published: r.is_published !== false,
+    };
+  }
+
+  function toReminderRow(r) {
+    return {
+      title: r.title,
+      body: r.body || null,
+      priority: r.priority || "normal",
+      publish_at: r.publishAt || new Date().toISOString(),
+      expires_at: r.expiresAt || null,
+      is_published: r.published !== false,
+    };
+  }
+
+  // The same list / create / update / remove calls for any church table.
+  function crud(table, from, toRow) {
+    var base = "/rest/v1/" + table;
+    return {
+      list: function (order) {
+        return sbRequest(base + "?select=*&order=" + order, { method: "GET" }, true).then(function (rows) {
+          return (rows || []).map(from);
+        });
+      },
+      create: function (item) {
+        return adminChurchId().then(function (churchId) {
+          var row = toRow(item);
+          row.church_id = churchId;
+          return sbRequest(base, { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) }, true).then(
+            function (rows) {
+              return from(rows[0]);
+            }
+          );
+        });
+      },
+      update: function (id, item) {
+        var row = toRow(item);
+        row.updated_at = new Date().toISOString();
+        return sbRequest(
+          base + "?id=eq." + encodeURIComponent(id),
+          { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) },
+          true
+        ).then(function (rows) {
+          if (!rows || !rows.length) throw ApiError("That item no longer exists.");
+          return from(rows[0]);
+        });
+      },
+      remove: function (id) {
+        return sbRequest(base + "?id=eq." + encodeURIComponent(id), { method: "DELETE" }, true).then(noop);
+      },
+    };
+  }
+
   var churchIdPromise = null;
   function adminChurchId() {
     // Use the church the signed-in user actually belongs to, not the public config value.
@@ -558,8 +650,44 @@
           return sbRequest("/rest/v1/notices?id=eq." + encodeURIComponent(id), { method: "DELETE" }, true).then(noop);
         },
       },
+      services: (function () {
+        var c = crud("services", fromService, toServiceRow);
+        return {
+          list: function () {
+            return c.list("starts_at.desc");
+          },
+          create: c.create,
+          update: c.update,
+          remove: c.remove,
+        };
+      })(),
+      reminders: (function () {
+        var c = crud("reminders", fromReminder, toReminderRow);
+        return {
+          list: function () {
+            return c.list("publish_at.desc");
+          },
+          create: c.create,
+          update: c.update,
+          remove: c.remove,
+        };
+      })(),
     },
     member: {
+      services: function () {
+        return rpc("my_services").then(function (rows) {
+          return (rows || []).map(function (r) {
+            return fromService(Object.assign({ is_published: true }, r));
+          });
+        });
+      },
+      reminders: function () {
+        return rpc("my_reminders").then(function (rows) {
+          return (rows || []).map(function (r) {
+            return fromReminder(Object.assign({ is_published: true }, r));
+          });
+        });
+      },
       me: function () {
         return rpc("my_member").then(function (rows) {
           var r = rows && rows[0];
