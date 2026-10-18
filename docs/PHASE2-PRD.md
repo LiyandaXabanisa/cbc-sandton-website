@@ -194,7 +194,9 @@ Received:
 * Notification sender: admin@cbcsandton.co.za. Automatic email goes through a mail service, which needs the church's domain verified with a few records added in the xneelo DNS settings. Replies and bounces can go to cbcsandtonit@gmail.com.
 * Youth leader: Monde Ndlovu. Moderation rights are given only after the church has vetted the person (see section 6).
 
+Platform Managers for now (told on 19 October 2026): the church IT administrator, who also holds the Senior Pastor role until Pastor Khoza has a login, and Tshepo Tselapedi. Nomsa Dlamini is also named as a Platform Manager, to be added when she has a login.
+
 Still needed from the church:
 
-* Names of the three Platform Manager delegates.
 * Nomsa's official title.
+* Emails or member records for Tshepo Tselapedi and Nomsa Dlamini, so they can get logins.
