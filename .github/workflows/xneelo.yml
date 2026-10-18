@@ -67,12 +67,16 @@ jobs:
           PORT="${FTP_PORT:-22}"
           DIR="${FTP_DIR:-public_html}"
           KNOWN="$GITHUB_WORKSPACE/.github/xneelo_known_hosts"
+          # lftp runs the connect program as a single word, so the ssh options live in a small wrapper.
+          WRAP="$RUNNER_TEMP/xneelo-ssh"
+          printf '#!/bin/sh\nexec ssh -a -x -o UserKnownHostsFile=%s -o StrictHostKeyChecking=yes -o HostKeyAlias=cbcsandton.co.za "$@"\n' "$KNOWN" > "$WRAP"
+          chmod +x "$WRAP"
           lftp -u "$FTP_USER,$FTP_PASS" -p "$PORT" "sftp://$HOST" -e "
             set cmd:fail-exit yes;
             set net:max-retries 2;
             set net:timeout 30;
             set sftp:auto-confirm no;
-            set sftp:connect-program \"ssh -a -x -o UserKnownHostsFile=$KNOWN -o StrictHostKeyChecking=yes -o HostKeyAlias=cbcsandton.co.za\";
+            set sftp:connect-program $WRAP;
             mirror -R --verbose --parallel=2 public/ \"$DIR\";
             bye"
 
