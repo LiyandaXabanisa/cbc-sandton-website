@@ -425,8 +425,12 @@
         renderNotices(r[1]);
         show("app");
         if (!API.member.sermons) $("#nav-sermons").hidden = true;
+        if (!API.program) $("#nav-program").hidden = true;
         if (!API.member.services && !API.member.reminders) $("#home-empty").hidden = false;
-        var nav = window.CBC_APP.views();
+        var nav = window.CBC_APP.views(function (name) {
+          if (name === "program" && window.CBC_MPROG) window.CBC_MPROG.showList();
+        });
+        if (API.program && window.CBC_MPROG) window.CBC_MPROG.init({ API: API, nav: nav, el: el, $: $, when: when });
         $("#avatar").addEventListener("click", function () { nav.show("profile"); });
         nav.start("home");
         window.CBC_APP.bell(API);

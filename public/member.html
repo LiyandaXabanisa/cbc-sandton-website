@@ -46,6 +46,10 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
     <span>Home</span>
   </button>
+  <button type="button" data-view="program" id="nav-program">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+    <span>Program</span>
+  </button>
   <button type="button" data-view="sermons" id="nav-sermons">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg>
     <span>Sermons</span>
@@ -59,6 +63,8 @@
     <span>Profile</span>
   </button>
 </nav>
+
+<div id="print-area" class="print-area" aria-hidden="true"></div>
 
 <main class="app-main" id="main">
 
@@ -81,6 +87,11 @@
 
       <div class="urgent-stack" id="urgent-stack" hidden></div>
 
+      <section class="dash-section" id="mine-section" aria-labelledby="mine-title" hidden>
+        <h2 id="mine-title">Your part</h2>
+        <div id="mine-list"></div>
+      </section>
+
       <section class="dash-section" id="services-section" aria-labelledby="services-title" hidden>
         <h2 id="services-title">This week</h2>
         <div id="service-list"></div>
@@ -94,6 +105,22 @@
       </section>
 
       <p class="empty" id="home-empty" hidden>Nothing new yet. Check the Notices tab for news from the church.</p>
+    </div>
+
+    <div data-view-panel="program" hidden>
+      <div class="page-head"><h1>Program</h1></div>
+      <div id="mp-list"></div>
+      <p class="empty" id="mp-empty" hidden>No programs are published yet. The order of service appears here once it is ready.</p>
+    </div>
+
+    <div data-view-panel="program-view" data-parent="program" hidden>
+      <button class="link back" id="mp-back" type="button">&larr; Program</button>
+      <div class="page-head">
+        <h1 id="mp-title"></h1>
+        <div class="actions"><button class="btn btn-outline btn-sm" id="mp-print" type="button">Print</button></div>
+      </div>
+      <p class="muted" id="mp-when"></p>
+      <div id="mp-items"></div>
     </div>
 
     <div data-view-panel="sermons" hidden>
@@ -152,7 +179,9 @@
 <script src="youtube.js"></script>
 <script src="richtext.js"></script>
 <script src="app.js"></script>
+<script src="programlib.js"></script>
 <script src="member.js"></script>
+<script src="memberprogram.js"></script>
 <script src="pwa.js" defer></script>
 </body>
 </html>
