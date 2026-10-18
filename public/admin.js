@@ -438,7 +438,7 @@
     box.replaceChildren();
     $("#services-empty").hidden = services.length > 0;
     services.forEach(function (s) {
-      var details = [s.speaker && "Speaker: " + s.speaker, s.venue && "Venue: " + s.venue, s.theme && "Theme: " + s.theme]
+      var details = [s.speaker && "Speaker: " + s.speaker, s.venue && "Venue: " + s.venue, s.theme && "Theme: " + s.theme, s.streamUrl && "Video linked"]
         .filter(Boolean)
         .join("  |  ");
       box.append(
@@ -517,7 +517,11 @@
     if (!data.title) return fail("Give the service a title.");
     if (!data.startsAt) return fail("Choose when it starts.");
     if (data.endsAt && new Date(data.endsAt) <= new Date(data.startsAt)) return fail("The end time must be after the start time.");
-    if (data.streamUrl && !/^https:\/\//i.test(data.streamUrl)) return fail("The live stream link must start with https://");
+    if (data.streamUrl && !/^https:\/\//i.test(data.streamUrl)) return fail("The video link must start with https://");
+    var yt = window.CBC_YT;
+    if (data.streamUrl && yt && yt.isYouTubeHost(data.streamUrl) && !yt.id(data.streamUrl)) {
+      return fail("That YouTube link isn't recognised. Open the video on YouTube, press Share, and paste that link.");
+    }
 
     var save = $("#service-save");
     save.disabled = true;

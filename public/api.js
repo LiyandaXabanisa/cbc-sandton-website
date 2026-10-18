@@ -681,6 +681,13 @@
           });
         });
       },
+      sermons: function () {
+        return rpc("my_sermons").then(function (rows) {
+          return (rows || []).map(function (r) {
+            return fromService(Object.assign({ is_published: true }, r));
+          });
+        });
+      },
       reminders: function () {
         return rpc("my_reminders").then(function (rows) {
           return (rows || []).map(function (r) {

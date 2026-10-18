@@ -140,16 +140,67 @@
         card.append(p);
       });
       if (s.description) card.append(el("p", "service-notes", s.description));
-      // The live link appears half an hour before the start and stays until the end.
+      // The live video appears half an hour before the start and stays until the end.
       var start = new Date(s.startsAt).getTime();
       var end = s.endsAt ? new Date(s.endsAt).getTime() : start + 3 * 60 * 60 * 1000;
-      if (s.streamUrl && /^https:\/\//i.test(s.streamUrl) && now >= start - 30 * 60 * 1000 && now <= end) {
-        var join = el("a", "btn btn-gold btn-sm", "Join live");
-        join.href = s.streamUrl;
-        join.target = "_blank";
-        join.rel = "noopener noreferrer";
-        card.append(join);
+      if (s.streamUrl && now >= start - 30 * 60 * 1000 && now <= end) {
+        var watch = videoBlock(s, "Watch live");
+        if (watch) card.append(watch);
       }
+      box.append(card);
+    });
+  }
+
+  // YouTube plays on this page, but only after a tap: nothing is loaded from YouTube until then.
+  function playerBlock(videoId, title, label) {
+    var wrap = el("div", "player");
+    var btn = el("button", "btn btn-gold btn-sm", label);
+    btn.type = "button";
+    btn.addEventListener("click", function () {
+      var frame = document.createElement("iframe");
+      frame.src = "https://www.youtube-nocookie.com/embed/" + videoId + "?autoplay=1&rel=0&playsinline=1";
+      frame.title = title;
+      frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      var ratio = el("div", "player-ratio");
+      ratio.append(frame);
+      wrap.replaceChildren(ratio);
+    });
+    wrap.append(btn);
+    return wrap;
+  }
+
+  // A YouTube link plays here. Any other https link opens in a new tab.
+  function videoBlock(s, label) {
+    var videoId = window.CBC_YT ? window.CBC_YT.id(s.streamUrl) : "";
+    if (videoId) return playerBlock(videoId, s.title, label);
+    if (/^https:\/\//i.test(s.streamUrl || "")) {
+      var link = el("a", "btn btn-gold btn-sm", "Open video");
+      link.href = s.streamUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      return link;
+    }
+    return null;
+  }
+
+  function renderSermons(list) {
+    var box = $("#sermon-list");
+    box.replaceChildren();
+    $("#sermons-section").hidden = list.length === 0;
+    list.forEach(function (s) {
+      var card = el("article", "service-card");
+      card.append(el("h3", null, s.title));
+      card.append(el("p", "service-when", when(s.startsAt, true)));
+      [["Speaker", s.speaker], ["Theme", s.theme], ["Scripture", s.scripture]].forEach(function (row) {
+        if (!row[1]) return;
+        var p = el("p", "service-line");
+        p.append(el("span", "service-key", row[0]), " " + row[1]);
+        card.append(p);
+      });
+      var watch = videoBlock(s, "Watch the sermon");
+      if (watch) card.append(watch);
       box.append(card);
     });
   }
@@ -174,6 +225,9 @@
   function loadDashboard() {
     if (API.member.services) {
       API.member.services().then(renderServices, function () {});
+    }
+    if (API.member.sermons) {
+      API.member.sermons().then(renderSermons, function () {});
     }
     if (API.member.reminders) {
       API.member.reminders().then(function (list) {

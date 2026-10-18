@@ -231,3 +231,8 @@ html{scrollbar-gutter:stable;}
   .tabs{flex-wrap:nowrap;gap:0;}
   .tab{flex:1 1 0;min-width:0;padding:12px 2px;font-size:0.84rem;text-align:center;}
 }
+
+/* ---------- video player (YouTube, loaded on tap) ---------- */
+.player{margin-top:14px;}
+.player-ratio{position:relative;width:100%;aspect-ratio:16/9;background:#111;border-radius:4px;overflow:hidden;}
+.player-ratio iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
