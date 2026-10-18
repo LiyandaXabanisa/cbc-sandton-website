@@ -39,7 +39,8 @@
     Object.keys(views).forEach(function (k) {
       views[k].hidden = k !== name;
     });
-    signOutBtn.hidden = name !== "app";
+    $("#app-nav").hidden = name !== "app";
+    $("#avatar").hidden = name !== "app";
   }
 
   function toLogin() {
@@ -89,6 +90,16 @@
   }
 
   // ---------- members: render ----------
+  function stat(n, label, attn) {
+    return h("div", { class: "stat" + (attn ? " attn" : "") }, h("b", { text: String(n) }), h("span", { text: label }));
+  }
+
+  function renderStats() {
+    var pending = members.filter(function (m) { return m.status === "pending"; }).length;
+    var withLogin = members.filter(function (m) { return m.hasAccount; }).length;
+    $("#stats").replaceChildren(stat(members.length, "Members"), stat(pending, "To approve", pending > 0), stat(withLogin, "With login"));
+  }
+
   function renderFilters() {
     var box = $("#filters");
     box.replaceChildren();
@@ -98,7 +109,7 @@
         h(
           "button",
           {
-            class: "filter",
+            class: "chip",
             type: "button",
             "aria-pressed": String(filter === f.key),
             onclick: function () {
@@ -106,8 +117,8 @@
               renderMembers();
             },
           },
-          h("span", { class: "count", text: String(count) }),
-          h("span", { class: "label", text: f.label })
+          f.label,
+          h("span", { class: "n", text: String(count) })
         )
       );
     });
@@ -117,49 +128,79 @@
     return h("button", { class: "btn btn-sm " + cls, type: "button", onclick: handler, text: label });
   }
 
+  var menuDialog = $("#member-menu");
+
+  function menuButton(label, cls, handler) {
+    return h("button", {
+      class: "btn " + cls,
+      type: "button",
+      text: label,
+      onclick: function () {
+        menuDialog.close();
+        handler();
+      },
+    });
+  }
+
+  function openMenu(m) {
+    $("#menu-title").textContent = m.fullName;
+    $("#menu-sub").textContent = [m.email, m.phone].filter(Boolean).join("  |  ") || "No contact details";
+    var box = $("#menu-actions");
+    box.replaceChildren();
+    if (m.status === "pending") box.append(menuButton("Approve", "btn-gold", function () { setStatus(m, "active", "Approved " + m.fullName); }));
+    if (m.status === "active" && !m.hasAccount) box.append(menuButton("Invite to log in", "btn-outline", function () { invite(m); }));
+    box.append(menuButton("Edit details", "btn-outline", function () { openMemberDialog(m); }));
+    if (m.status === "active") box.append(menuButton("Deactivate", "btn-outline", function () { setStatus(m, "inactive", "Deactivated " + m.fullName); }));
+    if (m.status === "inactive") box.append(menuButton("Reactivate", "btn-outline", function () { setStatus(m, "active", "Reactivated " + m.fullName); }));
+    box.append(menuButton(m.status === "pending" ? "Decline" : "Delete", "btn-danger", function () { removeMember(m); }));
+    menuDialog.showModal();
+  }
+
+  $("#menu-close").addEventListener("click", function () { menuDialog.close(); });
+
   function rowFor(m) {
-    var actions = h("div", { class: "row-actions" });
+    var sub = [m.email, m.phone].filter(Boolean).join("  |  ") || "No contact details";
+    var right;
     if (m.status === "pending") {
-      actions.append(actionButton("Approve", "btn-gold", function () { setStatus(m, "active", "Approved " + m.fullName); }));
-    } else if (m.status === "active") {
-      if (!m.hasAccount) actions.append(actionButton("Invite", "btn-outline", function () { invite(m); }));
-      actions.append(actionButton("Deactivate", "btn-outline", function () { setStatus(m, "inactive", "Deactivated " + m.fullName); }));
+      right = actionButton("Approve", "btn-gold", function (e) {
+        e.stopPropagation();
+        setStatus(m, "active", "Approved " + m.fullName);
+      });
+    } else if (m.status === "active" && !m.hasAccount && m.email) {
+      right = actionButton("Invite", "btn-outline", function (e) {
+        e.stopPropagation();
+        invite(m);
+      });
     } else {
-      actions.append(actionButton("Reactivate", "btn-outline", function () { setStatus(m, "active", "Reactivated " + m.fullName); }));
+      right = h("span", { class: "pill " + m.status, text: m.hasAccount ? "has login" : m.status });
     }
-    actions.append(actionButton("Edit", "btn-outline", function () { openMemberDialog(m); }));
-    actions.append(actionButton(m.status === "pending" ? "Decline" : "Delete", "btn-danger", function () { removeMember(m); }));
-
-    var contact = h("td", { "data-label": "Contact" });
-    if (m.email) contact.append(h("span", { class: "line", text: m.email }));
-    if (m.phone) contact.append(h("span", { class: "line", text: m.phone }));
-    if (!m.email && !m.phone) contact.append(h("span", { class: "line", text: "No contact details" }));
-
-    var nameCell = h("td", { "data-label": "Name" }, h("span", { class: "name", text: m.fullName }));
-    if (m.notes) nameCell.append(h("span", { class: "note", text: m.notes }));
-
-    var statusCell = h("td", { "data-label": "Status" }, h("span", { class: "pill " + m.status, text: m.status }));
-    if (m.hasAccount) statusCell.append(" ", h("span", { class: "pill login", text: "has login" }));
-
-    return h(
-      "tr",
-      null,
-      nameCell,
-      contact,
-      statusCell,
-      h("td", { class: "date", "data-label": "Registered", text: formatDate(m.createdAt) }),
-      h("td", { class: "actions" }, actions)
+    var row = h(
+      "div",
+      { class: "row", role: "button", tabindex: "0", "aria-label": "Open actions for " + m.fullName },
+      h("span", { class: "av", text: window.CBC_APP.initials(m.fullName) }),
+      h("span", { class: "main" }, h("span", { class: "name", text: m.fullName }), h("span", { class: "sub", text: sub })),
+      right
     );
+    row.style.cursor = "pointer";
+    row.addEventListener("click", function () { openMenu(m); });
+    row.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openMenu(m);
+      }
+    });
+    return row;
   }
 
   function renderMembers() {
+    renderStats();
     renderFilters();
     var list = visibleMembers();
-    var body = $("#members-body");
-    body.replaceChildren.apply(body, list.map(rowFor));
+    var box = $("#members-list");
+    box.replaceChildren.apply(box, list.map(rowFor));
+    box.hidden = list.length === 0;
 
     var empty = $("#empty");
-    $("#members-table").hidden = list.length === 0;
     empty.hidden = list.length !== 0;
     if (!list.length) {
       empty.textContent = members.length
@@ -167,7 +208,6 @@
         : "No members yet. New registrations from the website will appear here.";
     }
   }
-
   // ---------- members: actions ----------
   function handleError(err) {
     if (err && err.auth) return toLogin();
@@ -735,37 +775,36 @@
       .then(function () { save.disabled = false; });
   });
 
-  // ---------- tabs ----------
+  // ---------- content chips (inside the Content view) ----------
   var TABS = {
-    members: { title: "Members" },
-    notices: { title: "Notices", load: reloadNotices },
-    services: { title: "Services", load: reloadServices },
-    sermons: { title: "Sermons", load: reloadSermons },
-    reminders: { title: "Reminders", load: reloadReminders },
+    notices: { add: "#add-notice", load: reloadNotices },
+    services: { add: "#add-service", load: reloadServices },
+    sermons: { add: "#add-sermon", load: reloadSermons },
+    reminders: { add: "#add-reminder", load: reloadReminders },
   };
+  var lastTab = "notices";
 
   function selectTab(name) {
+    lastTab = name;
     Object.keys(TABS).forEach(function (k) {
       var on = k === name;
       $("#tab-" + k).setAttribute("aria-selected", String(on));
       $("#panel-" + k).hidden = !on;
-      $("#" + k + "-actions").hidden = !on;
+      $(TABS[k].add).hidden = !on;
     });
-    $("#page-title").textContent = TABS[name].title;
-    if (TABS[name].load) TABS[name].load().catch(handleError);
+    TABS[name].load().catch(handleError);
   }
 
   Object.keys(TABS).forEach(function (k) {
     var tab = $("#tab-" + k);
     var needs = tab.getAttribute("data-needs");
-    // Services and reminders only exist once the real database is connected.
+    // Services, sermons and reminders only exist once the real database is connected.
     if (needs && !admin[needs]) {
       tab.hidden = true;
       return;
     }
     tab.addEventListener("click", function () { selectTab(k); });
   });
-
   // ---------- demo data reset ----------
   if (API.demo) {
     $("#demo-reset").hidden = false;
@@ -792,8 +831,15 @@
     .then(function (s) {
       if (!s || s.role === "unlinked") return toLogin();
       if (s.role === "member") return window.location.replace("member.html");
-      $("#mode-note").textContent = API.modeLabel;
-      return reloadMembers().then(function () { show("app"); });
+      $("#mode-note").textContent = API.mode === "supabase" ? "" : API.modeLabel;
+      return reloadMembers().then(function () {
+        show("app");
+        var nav = window.CBC_APP.views(function (name) {
+          if (name === "content") selectTab(lastTab);
+        });
+        $("#avatar").addEventListener("click", function () { nav.show("settings"); });
+        nav.start("members");
+      });
     })
     .catch(function (err) {
       if (err && err.auth) return toLogin();

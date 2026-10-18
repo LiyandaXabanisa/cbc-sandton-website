@@ -18,7 +18,8 @@
     Object.keys(views).forEach(function (k) {
       views[k].hidden = k !== name;
     });
-    signOutBtn.hidden = name !== "app";
+    $("#app-nav").hidden = name !== "app";
+    $("#avatar").hidden = name !== "app";
   }
 
   function toLogin() {
@@ -181,7 +182,7 @@
   function renderSermons(list) {
     var box = $("#sermon-list");
     box.replaceChildren();
-    $("#sermons-section").hidden = list.length === 0;
+    $("#sermon-empty").hidden = list.length > 0;
     list.forEach(function (s) {
       var card = el("article", "service-card");
       card.append(el("h3", null, s.title));
@@ -208,11 +209,13 @@
     $("#reminder-empty").hidden = list.length > 0;
     list.forEach(function (r) {
       var item = el("article", "reminder-item priority-" + r.priority);
-      var head = el("div", "reminder-head");
-      head.append(el("span", "priority-badge", PRIORITY_LABEL[r.priority] || "Normal"), el("h3", null, r.title));
-      item.append(head);
-      if (r.body) item.append(el("p", "reminder-body", r.body));
-      if (r.expiresAt) item.append(el("p", "reminder-until", "Until " + when(r.expiresAt, true)));
+      var text = el("div", "body");
+      var title = el("h3", null, r.title);
+      if (r.priority !== "normal") title.append(el("span", "priority-badge", " " + (PRIORITY_LABEL[r.priority] || "")));
+      text.append(title);
+      if (r.body) text.append(el("p", "reminder-body", r.body));
+      if (r.expiresAt) text.append(el("p", "reminder-until", "Until " + when(r.expiresAt, true)));
+      item.append(el("span", "dot"), text);
       box.append(item);
     });
   }
@@ -233,9 +236,16 @@
     }
   }
 
+  function greeting() {
+    var hour = Number(new Date().toLocaleString("en-ZA", { hour: "2-digit", hour12: false, timeZone: TZ }));
+    return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  }
+
   function fill(member) {
-    $("#welcome").textContent = "Welcome, " + member.fullName.split(" ")[0];
+    $("#welcome").textContent = greeting() + ", " + member.fullName.split(" ")[0];
+    $("#today").textContent = new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
     $("#since").textContent = member.joinedAt ? "Member since " + formatDate(member.joinedAt) : "";
+    window.CBC_APP.setUser(member.fullName);
     $("#d-name").value = member.fullName;
     $("#d-phone").value = member.phone;
     $("#d-email").value = member.email;
@@ -294,6 +304,11 @@
         fill(r[0]);
         renderNotices(r[1]);
         show("app");
+        if (!API.member.sermons) $("#nav-sermons").hidden = true;
+        if (!API.member.services && !API.member.reminders) $("#home-empty").hidden = false;
+        var nav = window.CBC_APP.views();
+        $("#avatar").addEventListener("click", function () { nav.show("profile"); });
+        nav.start("home");
         loadDashboard();
       });
     })
