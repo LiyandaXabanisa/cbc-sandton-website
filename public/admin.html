@@ -52,6 +52,13 @@
 
 
   <section id="app-view" hidden>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-members" aria-selected="true" aria-controls="panel-members" type="button">Members</button>
+      <button class="tab" role="tab" id="tab-notices" aria-selected="false" aria-controls="panel-notices" type="button">Notices</button>
+      <button class="tab" role="tab" id="tab-services" aria-selected="false" aria-controls="panel-services" type="button" data-needs="services">Services</button>
+      <button class="tab" role="tab" id="tab-reminders" aria-selected="false" aria-controls="panel-reminders" type="button" data-needs="reminders">Reminders</button>
+    </div>
+
     <div class="admin-head">
       <div>
         <h1 id="page-title">Members</h1>
@@ -71,13 +78,6 @@
       <div class="admin-actions" id="reminders-actions" hidden>
         <button class="btn btn-gold" id="add-reminder" type="button">New reminder</button>
       </div>
-    </div>
-
-    <div class="tabs" role="tablist" aria-label="Sections">
-      <button class="tab" role="tab" id="tab-members" aria-selected="true" aria-controls="panel-members" type="button">Members</button>
-      <button class="tab" role="tab" id="tab-notices" aria-selected="false" aria-controls="panel-notices" type="button">Notices</button>
-      <button class="tab" role="tab" id="tab-services" aria-selected="false" aria-controls="panel-services" type="button" data-needs="services">Services</button>
-      <button class="tab" role="tab" id="tab-reminders" aria-selected="false" aria-controls="panel-reminders" type="button" data-needs="reminders">Reminders</button>
     </div>
 
     <div id="panel-members" role="tabpanel" aria-labelledby="tab-members">

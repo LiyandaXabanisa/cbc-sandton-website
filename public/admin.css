@@ -222,3 +222,12 @@ button.link{
 }
 .urgent-text{display:flex;flex-direction:column;gap:4px;}
 .urgent-close{background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;min-height:44px;padding:0 12px;}
+
+/* ---------- steady layout when switching tabs ---------- */
+html{scrollbar-gutter:stable;}
+.admin [role="tabpanel"]{min-height:60vh;}
+.tabs{margin-bottom:26px;}
+@media (max-width:560px){
+  .tabs{flex-wrap:nowrap;gap:0;}
+  .tab{flex:1 1 0;min-width:0;padding:12px 2px;font-size:0.84rem;text-align:center;}
+}
