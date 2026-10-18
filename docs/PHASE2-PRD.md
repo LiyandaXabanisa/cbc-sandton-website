@@ -191,7 +191,7 @@ Settled:
 
 Received:
 
-* Church email contact for notifications: cbcsandtonit@gmail.com. A Gmail address cannot be used as the sender of automatic email through a mail service, which needs the church's own domain. Notifications will be sent from an address on cbcsandton.co.za (for example notifications@cbcsandton.co.za, created in the xneelo control panel), and cbcsandtonit@gmail.com can receive replies and bounces.
+* Notification sender: admin@cbcsandton.co.za. Automatic email goes through a mail service, which needs the church's domain verified with a few records added in the xneelo DNS settings. Replies and bounces can go to cbcsandtonit@gmail.com.
 * Youth leader: Monde Ndlovu. Moderation rights are given only after the church has vetted the person (see section 6).
 
 Still needed from the church:

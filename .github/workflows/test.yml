@@ -1,0 +1,22 @@
+name: Tests
+
+# Runs the database permission tests on every push and pull request.
+# They use a throwaway in-memory Postgres, never the real database.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run test:db
