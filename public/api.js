@@ -348,6 +348,67 @@
     });
   }
 
+  // ----- sign in with Google / Apple (PKCE: the code only works in the browser that asked for it) -----
+  var PKCE_KEY = "cbc_pkce";
+
+  function b64url(buf) {
+    var bytes = new Uint8Array(buf);
+    var s = "";
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function oauthStart(provider) {
+    if (!window.crypto || !crypto.subtle) return Promise.reject(ApiError("This browser can't use that sign in. Please use your email and password."));
+    var raw = new Uint8Array(48);
+    crypto.getRandomValues(raw);
+    var verifier = b64url(raw);
+    try {
+      sessionStorage.setItem(PKCE_KEY, verifier);
+    } catch (_) {
+      return Promise.reject(ApiError("Please allow this site to store data for the session, or use your email and password."));
+    }
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)).then(function (hash) {
+      var back = window.location.origin + window.location.pathname;
+      window.location.assign(
+        SB_URL + "/auth/v1/authorize?provider=" + encodeURIComponent(provider) +
+          "&redirect_to=" + encodeURIComponent(back) +
+          "&code_challenge=" + b64url(hash) + "&code_challenge_method=s256"
+      );
+    });
+  }
+
+  // Called when the login page loads. Resolves true if a provider sign in was just completed.
+  function oauthFinish() {
+    var q = new URLSearchParams(window.location.search);
+    var h = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    var failed = q.get("error") || h.get("error");
+    var code = q.get("code");
+    if (!code && !failed) return Promise.resolve(false);
+    try {
+      window.history.replaceState(null, "", window.location.pathname);
+    } catch (_) {}
+    var verifier = null;
+    try {
+      verifier = sessionStorage.getItem(PKCE_KEY);
+      sessionStorage.removeItem(PKCE_KEY);
+    } catch (_) {}
+    if (failed || !verifier) {
+      return Promise.reject(ApiError("That sign in didn't finish. Please try again, or use your email and password."));
+    }
+    return fetch(SB_URL + "/auth/v1/token?grant_type=pkce", {
+      method: "POST",
+      headers: { apikey: sb.anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ auth_code: code, code_verifier: verifier }),
+    })
+      .then(readJson)
+      .then(function (data) {
+        if (!data || !data.access_token) throw ApiError("That sign in didn't finish. Please try again, or use your email and password.");
+        tokens.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+        return true;
+      });
+  }
+
   var supabaseApi = {
     mode: "supabase",
     modeLabel: "Connected to ChurchHub",
@@ -369,6 +430,11 @@
     },
     auth: {
       emailOptional: false,
+      providers: (sb.providers || []).filter(function (p) {
+        return p === "google" || p === "apple";
+      }),
+      oauthStart: oauthStart,
+      oauthFinish: oauthFinish,
       session: function () {
         if (!tokens.get()) return Promise.resolve(null);
         return resolveRole().catch(function (e) {

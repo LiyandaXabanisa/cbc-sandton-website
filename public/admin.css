@@ -182,3 +182,8 @@ button.link{
 .demo-actions{justify-content:center;}
 .row-actions{justify-content:center;}
 .toast{text-align:center;}
+
+.social{margin-top:22px;display:grid;gap:10px;justify-items:center}
+.social .or{margin:0;width:100%;display:flex;align-items:center;gap:12px;font-size:0.85rem;color:var(--ink-muted)}
+.social .or::before,.social .or::after{content:"";flex:1;border-top:1px solid var(--line, #d9dee5)}
+.social-btn{width:100%;max-width:320px}

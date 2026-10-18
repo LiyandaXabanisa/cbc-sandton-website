@@ -119,6 +119,25 @@
     $("#demo-member").addEventListener("click", function () { fillDemo(API.demo.memberEmail); });
   }
 
+  // ----- sign in with Google / Apple (shown only for providers switched on in site.config.js) -----
+  var providers = auth.providers || [];
+  if (providers.length) {
+    $("#social").hidden = false;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-provider]"), function (btn) {
+      var name = btn.getAttribute("data-provider");
+      if (providers.indexOf(name) === -1) return;
+      btn.hidden = false;
+      btn.addEventListener("click", function () {
+        setError("#si-error", "");
+        btn.disabled = true;
+        auth.oauthStart(name).catch(function (err) {
+          btn.disabled = false;
+          setError("#si-error", friendly(err, "That sign in didn't work. Please try again."));
+        });
+      });
+    });
+  }
+
   // ----- start -----
   if (auth.emailOptional) {
     $("#signin-intro").textContent =
@@ -128,8 +147,17 @@
     $("#signin-intro").textContent = "Members and church leaders sign in with their email and password.";
   }
 
-  auth
-    .session()
+  var finishing = auth.oauthFinish ? auth.oauthFinish() : Promise.resolve(false);
+
+  finishing
+    .catch(function (err) {
+      show("signin");
+      setError("#si-error", friendly(err, "That sign in didn't work. Please try again."));
+      throw { handled: true };
+    })
+    .then(function () {
+      return auth.session();
+    })
     .then(function (s) {
       if (!s) {
         show("signin");
@@ -138,6 +166,7 @@
       afterAuth(s);
     })
     .catch(function (err) {
+      if (err && err.handled) return;
       if (err && err.unavailable) {
         $("#notice-title").textContent = "Login isn't available";
         $("#notice-body").textContent =

@@ -41,5 +41,9 @@ window.SITE_CONFIG = {
     url: "https://wbmzixsjlmnjcwyzozbi.supabase.co",
     anonKey: "sb_publishable_TyRY7Qh6ix4lFcXE7Ris5w_tBGIDaXh",
     churchId: "7ba1b908-8d7b-4203-a031-213ce1dc3322",
+    //   providers: extra sign in buttons on the Login page. Add "google" and/or "apple" ONLY
+    //              after that provider is switched on in Supabase (Authentication > Sign In / Providers),
+    //              otherwise the button leads to an error page. Example: ["google"]
+    providers: [],
   },
 };
