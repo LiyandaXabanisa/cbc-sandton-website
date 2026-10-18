@@ -82,7 +82,7 @@ jobs:
             set sftp:connect-program $WRAP;
             pwd;
             ls;
-            mirror -R --verbose --parallel=2 public/ \"$DIR\";
+            mirror -R --verbose --parallel=2 public/ $DIR;
             bye"
 
       - name: Check the live site
