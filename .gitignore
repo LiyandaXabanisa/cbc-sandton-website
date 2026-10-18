@@ -11,3 +11,4 @@ private/
 *.xlsx
 members-clean.csv
 supabase-import-members.sql
+*.zip

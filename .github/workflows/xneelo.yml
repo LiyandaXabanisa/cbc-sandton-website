@@ -9,7 +9,7 @@ name: Upload site to xneelo
 # Optional secrets (the defaults are shown):
 #   XNEELO_FTP_HOST      www524.jnb1.host-h.net  (your hosting server)
 #   XNEELO_FTP_PORT      22
-#   XNEELO_FTP_DIR       public_html     (the folder the website is served from)
+#   XNEELO_FTP_DIR       .               (the login folder, which is where xneelo serves the website from)
 #
 # The server's identity is pinned in .github/xneelo_known_hosts, so uploads can only go to the
 # real server. If xneelo ever moves the site to a new server, replace that file.
@@ -68,7 +68,7 @@ jobs:
           FTP_PASS="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           HOST="${FTP_HOST:-www524.jnb1.host-h.net}"
           PORT="${FTP_PORT:-22}"
-          DIR="${FTP_DIR:-public_html}"
+          DIR="${FTP_DIR:-.}"
           KNOWN="$GITHUB_WORKSPACE/.github/xneelo_known_hosts"
           # lftp runs the connect program as a single word, so the ssh options live in a small wrapper.
           WRAP="$RUNNER_TEMP/xneelo-ssh"
