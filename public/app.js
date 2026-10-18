@@ -46,22 +46,41 @@
     return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
   }
 
-  // views: panels marked data-view-panel="name", buttons marked data-view="name" inside .app-nav
+  // views: panels marked data-view-panel="name", buttons marked data-view="name" inside .app-nav.
+  // A panel with data-parent="x" is a sub screen: it has no button and lights up its parent's button.
   function views(onShow) {
     var panels = Array.prototype.slice.call(document.querySelectorAll("[data-view-panel]"));
     var buttons = Array.prototype.slice.call(document.querySelectorAll(".app-nav [data-view]"));
 
-    function names() {
-      return buttons.filter(function (b) { return !b.hidden; }).map(function (b) { return b.getAttribute("data-view"); });
+    function panelFor(name) {
+      return panels.filter(function (p) { return p.getAttribute("data-view-panel") === name; })[0];
+    }
+
+    function buttonFor(name) {
+      return buttons.filter(function (b) { return b.getAttribute("data-view") === name; })[0];
+    }
+
+    function allowed(name) {
+      var panel = panelFor(name);
+      if (!panel) return false;
+      if (panel.hasAttribute("data-parent")) return true;
+      var btn = buttonFor(name);
+      return !!btn && !btn.hidden;
+    }
+
+    function first() {
+      return buttons.filter(function (b) { return !b.hidden; }).map(function (b) { return b.getAttribute("data-view"); })[0];
     }
 
     function show(name, keepScroll) {
-      if (names().indexOf(name) === -1) name = names()[0];
+      if (!allowed(name)) name = first();
+      var panel = panelFor(name);
+      var lit = panel.getAttribute("data-parent") || name;
       panels.forEach(function (p) {
-        p.hidden = p.getAttribute("data-view-panel") !== name;
+        p.hidden = p !== panel;
       });
       buttons.forEach(function (b) {
-        if (b.getAttribute("data-view") === name) b.setAttribute("aria-current", "page");
+        if (b.getAttribute("data-view") === lit) b.setAttribute("aria-current", "page");
         else b.removeAttribute("aria-current");
       });
       try {
@@ -81,11 +100,10 @@
       show: show,
       start: function (fallback) {
         var want = window.location.hash.replace("#", "");
-        show(names().indexOf(want) !== -1 ? want : fallback, true);
+        show(allowed(want) ? want : fallback, true);
       },
     };
   }
-
   // the bell: new items for this person, shown in a small window
   function bell(api) {
     var btn = document.getElementById("bell");
