@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm run test:db
+      - run: npm test

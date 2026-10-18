@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
     "dev": "node --env-file-if-exists=.env --watch server.js",
-    "test:db": "node --test tests/db/*.test.mjs"
+    "test:db": "node --test tests/db/*.test.mjs",
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "test": "node --test tests/unit/*.test.mjs tests/db/*.test.mjs"
   },
   "dependencies": {
     "express": "^4.19.2"

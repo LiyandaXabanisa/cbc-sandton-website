@@ -86,9 +86,72 @@
     };
   }
 
+  // the bell: new items for this person, shown in a small window
+  function bell(api) {
+    var btn = document.getElementById("bell");
+    var dlg = document.getElementById("bell-dialog");
+    if (!btn || !dlg || !api || !api.notifications) return;
+    var badge = document.getElementById("bell-badge");
+    var list = document.getElementById("bell-list");
+    var items = [];
+
+    function paint() {
+      var n = items.filter(function (i) { return !i.read; }).length;
+      badge.hidden = n === 0;
+      badge.textContent = n > 9 ? "9+" : String(n);
+      btn.setAttribute("aria-label", n ? "Notifications, " + n + " new" : "Notifications");
+    }
+
+    function refresh() {
+      return api.notifications.list().then(function (rows) {
+        items = rows;
+        paint();
+      });
+    }
+
+    function show() {
+      list.replaceChildren();
+      if (!items.length) {
+        var p = document.createElement("p");
+        p.className = "empty";
+        p.textContent = "Nothing new right now.";
+        list.append(p);
+      }
+      items.forEach(function (i) {
+        var row = document.createElement("div");
+        row.className = "bell-item" + (i.read ? "" : " unread");
+        var t = document.createElement("strong");
+        t.textContent = i.title;
+        row.append(t);
+        if (i.body) {
+          var b = document.createElement("span");
+          b.textContent = i.body;
+          row.append(b);
+        }
+        var d = document.createElement("small");
+        d.textContent = new Date(i.createdAt).toLocaleString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Johannesburg" });
+        row.append(d);
+        list.append(row);
+      });
+    }
+
+    btn.hidden = false;
+    btn.addEventListener("click", function () {
+      show();
+      dlg.showModal();
+      // opening the window counts as reading
+      api.notifications.markRead().then(function () {
+        items = items.map(function (i) { return Object.assign({}, i, { read: true }); });
+        paint();
+      });
+    });
+    document.getElementById("bell-close").addEventListener("click", function () { dlg.close(); });
+    refresh();
+  }
   window.CBC_APP = {
     initials: initials,
     views: views,
+    bell: bell,
     setUser: function (name) {
       var a = document.getElementById("avatar");
       if (a) a.textContent = initials(name);
