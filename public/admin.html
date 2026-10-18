@@ -56,6 +56,7 @@
       <button class="tab" role="tab" id="tab-members" aria-selected="true" aria-controls="panel-members" type="button">Members</button>
       <button class="tab" role="tab" id="tab-notices" aria-selected="false" aria-controls="panel-notices" type="button">Notices</button>
       <button class="tab" role="tab" id="tab-services" aria-selected="false" aria-controls="panel-services" type="button" data-needs="services">Services</button>
+      <button class="tab" role="tab" id="tab-sermons" aria-selected="false" aria-controls="panel-sermons" type="button" data-needs="sermons">Sermons</button>
       <button class="tab" role="tab" id="tab-reminders" aria-selected="false" aria-controls="panel-reminders" type="button" data-needs="reminders">Reminders</button>
     </div>
 
@@ -74,6 +75,9 @@
       </div>
       <div class="admin-actions" id="services-actions" hidden>
         <button class="btn btn-gold" id="add-service" type="button">New service</button>
+      </div>
+      <div class="admin-actions" id="sermons-actions" hidden>
+        <button class="btn btn-gold" id="add-sermon" type="button">New sermon</button>
       </div>
       <div class="admin-actions" id="reminders-actions" hidden>
         <button class="btn btn-gold" id="add-reminder" type="button">New reminder</button>
@@ -115,6 +119,12 @@
       <p class="muted notices-intro">Services and events appear on each member's dashboard for the week ahead.</p>
       <div id="services-list"></div>
       <p class="empty" id="services-empty" hidden>No services yet. Use New service to add this week's.</p>
+    </div>
+
+    <div id="panel-sermons" role="tabpanel" aria-labelledby="tab-sermons" hidden>
+      <p class="muted notices-intro">Past sermons from YouTube. Members watch them here, and the video only loads from YouTube when they press play.</p>
+      <div id="sermons-list"></div>
+      <p class="empty" id="sermons-empty" hidden>No sermons yet. Use New sermon to add the first one.</p>
     </div>
 
     <div id="panel-reminders" role="tabpanel" aria-labelledby="tab-reminders" hidden>
@@ -194,11 +204,6 @@
         <input id="s-venue" type="text" maxlength="200" autocomplete="off">
       </div>
       <div class="field">
-        <label for="s-stream">YouTube link (optional)</label>
-        <input id="s-stream" type="url" maxlength="500" autocomplete="off" placeholder="https://youtube.com/...">
-        <p class="hint">Paste the video's Share link. Members watch it here on the platform: live before and during the service, then as a sermon afterwards. You can add or change it after the service too.</p>
-      </div>
-      <div class="field">
         <label for="s-speaker">Speaker (optional)</label>
         <input id="s-speaker" type="text" maxlength="120" autocomplete="off">
       </div>
@@ -222,6 +227,50 @@
       <div class="dialog-actions">
         <button class="btn btn-outline" type="button" id="service-cancel">Cancel</button>
         <button class="btn btn-gold" type="submit" id="service-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="sermon-dialog" aria-labelledby="sermon-dialog-title">
+    <form id="sermon-form" novalidate>
+      <h2 id="sermon-dialog-title">New sermon</h2>
+      <div class="field">
+        <label for="v-title">Title</label>
+        <input id="v-title" type="text" maxlength="120" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label for="v-url">YouTube link</label>
+        <input id="v-url" type="url" maxlength="500" autocomplete="off" placeholder="https://youtu.be/..." required>
+        <p class="hint">Open the finished video on YouTube, press Share, and paste that link here.</p>
+      </div>
+      <div class="field">
+        <label for="v-date">Date preached</label>
+        <input id="v-date" type="date" required>
+      </div>
+      <div class="field">
+        <label for="v-speaker">Speaker (optional)</label>
+        <input id="v-speaker" type="text" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="v-scripture">Scripture (optional)</label>
+        <input id="v-scripture" type="text" maxlength="200" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="v-series">Series (optional)</label>
+        <input id="v-series" type="text" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="v-desc">Notes (optional)</label>
+        <textarea id="v-desc" rows="3" maxlength="4000"></textarea>
+      </div>
+      <div class="field check">
+        <input id="v-published" type="checkbox" checked>
+        <label for="v-published">Visible to members</label>
+      </div>
+      <p class="form-status" id="sermon-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" id="sermon-cancel">Cancel</button>
+        <button class="btn btn-gold" type="submit" id="sermon-save">Save</button>
       </div>
     </form>
   </dialog>

@@ -140,13 +140,6 @@
         card.append(p);
       });
       if (s.description) card.append(el("p", "service-notes", s.description));
-      // The live video appears half an hour before the start and stays until the end.
-      var start = new Date(s.startsAt).getTime();
-      var end = s.endsAt ? new Date(s.endsAt).getTime() : start + 3 * 60 * 60 * 1000;
-      if (s.streamUrl && now >= start - 30 * 60 * 1000 && now <= end) {
-        var watch = videoBlock(s, "Watch live");
-        if (watch) card.append(watch);
-      }
       box.append(card);
     });
   }
@@ -173,11 +166,11 @@
 
   // A YouTube link plays here. Any other https link opens in a new tab.
   function videoBlock(s, label) {
-    var videoId = window.CBC_YT ? window.CBC_YT.id(s.streamUrl) : "";
+    var videoId = window.CBC_YT ? window.CBC_YT.id(s.videoUrl) : "";
     if (videoId) return playerBlock(videoId, s.title, label);
-    if (/^https:\/\//i.test(s.streamUrl || "")) {
+    if (/^https:\/\//i.test(s.videoUrl || "")) {
       var link = el("a", "btn btn-gold btn-sm", "Open video");
-      link.href = s.streamUrl;
+      link.href = s.videoUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       return link;
@@ -192,8 +185,11 @@
     list.forEach(function (s) {
       var card = el("article", "service-card");
       card.append(el("h3", null, s.title));
-      card.append(el("p", "service-when", when(s.startsAt, true)));
-      [["Speaker", s.speaker], ["Theme", s.theme], ["Scripture", s.scripture]].forEach(function (row) {
+      var day = s.preachedOn ? new Date(s.preachedOn + "T12:00:00") : null;
+      card.append(
+        el("p", "service-when", day && !isNaN(day) ? day.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "")
+      );
+      [["Series", s.series], ["Speaker", s.speaker], ["Scripture", s.scripture]].forEach(function (row) {
         if (!row[1]) return;
         var p = el("p", "service-line");
         p.append(el("span", "service-key", row[0]), " " + row[1]);

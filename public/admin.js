@@ -438,7 +438,7 @@
     box.replaceChildren();
     $("#services-empty").hidden = services.length > 0;
     services.forEach(function (s) {
-      var details = [s.speaker && "Speaker: " + s.speaker, s.venue && "Venue: " + s.venue, s.theme && "Theme: " + s.theme, s.streamUrl && "Video linked"]
+      var details = [s.speaker && "Speaker: " + s.speaker, s.venue && "Venue: " + s.venue, s.theme && "Theme: " + s.theme]
         .filter(Boolean)
         .join("  |  ");
       box.append(
@@ -485,7 +485,6 @@
     $("#s-start").value = s ? toInput(new Date(new Date(s.startsAt).getTime() + shift).toISOString()) : "";
     $("#s-end").value = s && s.endsAt ? toInput(new Date(new Date(s.endsAt).getTime() + shift).toISOString()) : "";
     $("#s-venue").value = s ? s.venue : "";
-    $("#s-stream").value = s ? s.streamUrl : "";
     $("#s-speaker").value = s ? s.speaker : "";
     $("#s-theme").value = s ? s.theme : "";
     $("#s-scripture").value = s ? s.scripture : "";
@@ -506,7 +505,6 @@
       startsAt: fromInput($("#s-start").value),
       endsAt: fromInput($("#s-end").value),
       venue: $("#s-venue").value.trim(),
-      streamUrl: $("#s-stream").value.trim(),
       speaker: $("#s-speaker").value.trim(),
       theme: $("#s-theme").value.trim(),
       scripture: $("#s-scripture").value.trim(),
@@ -517,11 +515,6 @@
     if (!data.title) return fail("Give the service a title.");
     if (!data.startsAt) return fail("Choose when it starts.");
     if (data.endsAt && new Date(data.endsAt) <= new Date(data.startsAt)) return fail("The end time must be after the start time.");
-    if (data.streamUrl && !/^https:\/\//i.test(data.streamUrl)) return fail("The video link must start with https://");
-    var yt = window.CBC_YT;
-    if (data.streamUrl && yt && yt.isYouTubeHost(data.streamUrl) && !yt.id(data.streamUrl)) {
-      return fail("That YouTube link isn't recognised. Open the video on YouTube, press Share, and paste that link.");
-    }
 
     var save = $("#service-save");
     save.disabled = true;
@@ -531,6 +524,112 @@
       .then(function () {
         serviceDialog.close();
         toast(editingService ? "Service updated" : "Service added");
+      })
+      .catch(function (err) {
+        if (err && err.auth) return toLogin();
+        fail((err && err.message) || "Couldn't save. Please try again.");
+      })
+      .then(function () { save.disabled = false; });
+  });
+
+  // ---------- sermons ----------
+  var sermons = [];
+
+  function formatDay(isoDate) {
+    if (!isoDate) return "";
+    var d = new Date(isoDate + "T12:00:00");
+    return isNaN(d) ? "" : d.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+  }
+
+  function renderSermons() {
+    var box = $("#sermons-list");
+    box.replaceChildren();
+    $("#sermons-empty").hidden = sermons.length > 0;
+    sermons.forEach(function (s) {
+      var details = [s.speaker && "Speaker: " + s.speaker, s.series && "Series: " + s.series, s.scripture].filter(Boolean).join("  |  ");
+      box.append(
+        h(
+          "article",
+          { class: "notice-card" },
+          h("div", { class: "notice-head" }, h("h3", { text: s.title }), h("span", { class: "pill " + (s.published ? "active" : "inactive"), text: s.published ? "visible" : "hidden" })),
+          h("p", { class: "notice-date", text: formatDay(s.preachedOn) }),
+          details ? h("p", { class: "notice-body", text: details }) : null,
+          h(
+            "div",
+            { class: "row-actions" },
+            actionButton("Edit", "btn-outline", function () { openSermonDialog(s); }),
+            actionButton(s.published ? "Hide" : "Show", "btn-outline", function () {
+              admin.sermons.update(s.id, Object.assign({}, s, { published: !s.published })).then(reloadSermons).catch(handleError);
+            }),
+            actionButton("Delete", "btn-danger", function () {
+              if (!window.confirm("Delete “" + s.title + "”? This can't be undone.")) return;
+              admin.sermons.remove(s.id).then(reloadSermons).then(function () { toast("Sermon deleted"); }).catch(handleError);
+            })
+          )
+        )
+      );
+    });
+  }
+
+  function reloadSermons() {
+    return admin.sermons.list().then(function (list) {
+      sermons = list;
+      renderSermons();
+    });
+  }
+
+  var sermonDialog = $("#sermon-dialog");
+  var editingSermon = null;
+
+  function openSermonDialog(s) {
+    editingSermon = s || null;
+    $("#sermon-dialog-title").textContent = s ? "Edit sermon" : "New sermon";
+    $("#v-title").value = s ? s.title : "";
+    $("#v-url").value = s ? s.videoUrl : "";
+    $("#v-date").value = s ? s.preachedOn : "";
+    $("#v-speaker").value = s ? s.speaker : "";
+    $("#v-scripture").value = s ? s.scripture : "";
+    $("#v-series").value = s ? s.series : "";
+    $("#v-desc").value = s ? s.description : "";
+    $("#v-published").checked = s ? s.published : true;
+    $("#sermon-error").className = "form-status";
+    sermonDialog.showModal();
+    $("#v-title").focus();
+  }
+
+  $("#add-sermon").addEventListener("click", function () { openSermonDialog(null); });
+  $("#sermon-cancel").addEventListener("click", function () { sermonDialog.close(); });
+
+  $("#sermon-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var data = {
+      title: $("#v-title").value.trim(),
+      videoUrl: $("#v-url").value.trim(),
+      preachedOn: $("#v-date").value,
+      speaker: $("#v-speaker").value.trim(),
+      scripture: $("#v-scripture").value.trim(),
+      series: $("#v-series").value.trim(),
+      description: $("#v-desc").value.trim(),
+      published: $("#v-published").checked,
+    };
+    var fail = function (m) { dialogError("#sermon-error", m); };
+    if (!data.title) return fail("Give the sermon a title.");
+    if (!data.videoUrl) return fail("Paste the YouTube link for this sermon.");
+    if (!/^https:\/\//i.test(data.videoUrl)) return fail("The video link must start with https://");
+    var yt = window.CBC_YT;
+    if (yt && yt.isYouTubeHost(data.videoUrl) && !yt.id(data.videoUrl)) {
+      return fail("That YouTube link isn't recognised. Open the video on YouTube, press Share, and paste that link.");
+    }
+    if (!data.preachedOn) return fail("Choose the date it was preached.");
+
+    var save = $("#sermon-save");
+    save.disabled = true;
+    var job = editingSermon ? admin.sermons.update(editingSermon.id, data) : admin.sermons.create(data);
+    job
+      .then(reloadSermons)
+      .then(function () {
+        sermonDialog.close();
+        toast(editingSermon ? "Sermon updated" : "Sermon added");
       })
       .catch(function (err) {
         if (err && err.auth) return toLogin();
@@ -641,6 +740,7 @@
     members: { title: "Members" },
     notices: { title: "Notices", load: reloadNotices },
     services: { title: "Services", load: reloadServices },
+    sermons: { title: "Sermons", load: reloadSermons },
     reminders: { title: "Reminders", load: reloadReminders },
   };
 

@@ -317,11 +317,37 @@
       starts_at: s.startsAt,
       ends_at: s.endsAt || null,
       venue: s.venue || null,
-      stream_url: s.streamUrl || null,
       speaker: s.speaker || null,
       theme: s.theme || null,
       scripture: s.scripture || null,
       description: s.description || null,
+      is_published: s.published !== false,
+    };
+  }
+
+  function fromSermon(r) {
+    return {
+      id: r.id,
+      title: r.title,
+      preachedOn: r.preached_on,
+      speaker: r.speaker || "",
+      scripture: r.scripture || "",
+      series: r.series || "",
+      description: r.description || "",
+      videoUrl: r.video_url || "",
+      published: r.is_published !== false,
+    };
+  }
+
+  function toSermonRow(s) {
+    return {
+      title: s.title,
+      preached_on: s.preachedOn,
+      speaker: s.speaker || null,
+      scripture: s.scripture || null,
+      series: s.series || null,
+      description: s.description || null,
+      video_url: s.videoUrl,
       is_published: s.published !== false,
     };
   }
@@ -661,6 +687,17 @@
           remove: c.remove,
         };
       })(),
+      sermons: (function () {
+        var c = crud("sermons", fromSermon, toSermonRow);
+        return {
+          list: function () {
+            return c.list("preached_on.desc");
+          },
+          create: c.create,
+          update: c.update,
+          remove: c.remove,
+        };
+      })(),
       reminders: (function () {
         var c = crud("reminders", fromReminder, toReminderRow);
         return {
@@ -684,7 +721,7 @@
       sermons: function () {
         return rpc("my_sermons").then(function (rows) {
           return (rows || []).map(function (r) {
-            return fromService(Object.assign({ is_published: true }, r));
+            return fromSermon(Object.assign({ is_published: true }, r));
           });
         });
       },
