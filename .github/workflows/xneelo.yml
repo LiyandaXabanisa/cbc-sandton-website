@@ -63,6 +63,9 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq lftp
+          # Pasted values often carry a hidden line break, which makes the login fail.
+          FTP_USER="$(printf '%s' "$FTP_USER" | tr -d '\r\n')"
+          FTP_PASS="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           HOST="${FTP_HOST:-www524.jnb1.host-h.net}"
           PORT="${FTP_PORT:-22}"
           DIR="${FTP_DIR:-public_html}"
