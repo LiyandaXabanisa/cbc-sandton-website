@@ -299,3 +299,9 @@ body.app dialog .field label{text-transform:none;letter-spacing:0;font-family:va
 .swatch i{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.2);display:inline-block;}
 .pick-list{max-height:50vh;overflow-y:auto;margin-top:8px;}
 .min-area h2{margin-top:14px;}
+
+/* soup kitchen */
+.kitchen-task.is-done h3{text-decoration:line-through;color:var(--ink-muted);}
+.check-line{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:0.95rem;min-height:44px;}
+.check-line input{width:22px;height:22px;accent-color:var(--gold-500);flex:none;}
+.check-line.is-done{color:var(--ink-muted);text-decoration:line-through;}

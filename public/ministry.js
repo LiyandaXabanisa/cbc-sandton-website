@@ -103,6 +103,7 @@
   }
 
   var root, current, canWrite, tab;
+  var registry = {};
 
   // ---------- the list of my ministries ----------
   function tiles(box, list) {
@@ -122,8 +123,8 @@
       var home = $("#min-tiles-home");
       var sec = $("#min-section");
       if (home) {
-        // Praise and Worship is the only workspace so far
-        var mine = list.filter(function (m) { return m.slug === "praise-worship"; });
+        // only ministries that have a workspace get a tile on Home
+        var mine = list.filter(function (m) { return !!registry[m.slug]; });
         if (sec) sec.hidden = mine.length === 0;
         tiles(home, mine);
       }
@@ -141,8 +142,8 @@
     root = $("#min-root");
     root.replaceChildren();
     root.append(el("h1", null, m.name));
-    if (m.slug === "praise-worship") {
-      renderWorship();
+    if (registry[m.slug]) {
+      registry[m.slug](m);
     } else {
       root.append(el("p", "muted", "This ministry's workspace is coming soon."));
     }
@@ -644,5 +645,19 @@
     showTiles();
   }
 
-  window.CBC_MIN = { init: init, showTiles: showTiles };
+  registry["praise-worship"] = function () { renderWorship(); };
+
+  // other workspaces plug in here and reuse the small helpers
+  window.CBC_MIN = {
+    init: init,
+    showTiles: showTiles,
+    register: function (slug, render) { registry[slug] = render; },
+    ui: {
+      el: el, btn: btn, field: field, input: input, textarea: textarea, dialog: dialog, fail: fail, whenText: whenText,
+      ctx: function () { return ctx; },
+      root: function () { return root; },
+      canWrite: function () { return canWrite; },
+      isManager: function () { return !!current && current.role === "manager"; },
+    },
+  };
 })();
